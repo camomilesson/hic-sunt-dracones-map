@@ -29,7 +29,7 @@ fun AppNavigation() {
             ) {
                 MapScreen(
                     onNavigateToProgress = { name ->
-                        (backStack as MutableList<NavKey>).add(Destination.Progress(name))
+                        backStack.add(Destination.Progress(name))
                     }
                 )
             }
@@ -39,17 +39,17 @@ fun AppNavigation() {
                 ProgressScreen(
                     explorerName = key.explorerName,
                     onNavigateBack = {
-                        (backStack as MutableList<NavKey>).removeAt(backStack.size - 1)
+                        backStack.removeLastOrNull()
                     }
                 )
             }
-            else -> error("Unknown destination")
+            else -> error("Unknown destination: $key")
         }
     }
 
     NavDisplay(
         backStack = backStack,
-        onBack = { (backStack as MutableList<NavKey>).removeAt(backStack.size - 1) },
+        onBack = { backStack.removeLastOrNull() },
         entryProvider = entryProvider
     )
 }
