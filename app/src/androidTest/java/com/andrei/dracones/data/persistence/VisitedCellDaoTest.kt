@@ -77,4 +77,33 @@ class VisitedCellDaoTest {
         assertEquals(2000L, allCells[0].lastVisitedAt)
         assertEquals(2, allCells[0].visitCount)
     }
+
+    @Test
+    fun upsertNewCell() = runBlocking {
+        dao.upsert(
+            h3Index = "h3_1",
+            resolution = 11,
+            blockParent = "p10",
+            neighborhoodParent = "p9",
+            districtParent = "p8",
+            now = 1000L
+        )
+        
+        val allCells = dao.getAllVisitedCells().first()
+        assertEquals(1, allCells.size)
+        assertEquals(1, allCells[0].visitCount)
+        assertEquals(1000L, allCells[0].firstVisitedAt)
+    }
+
+    @Test
+    fun upsertExistingCell() = runBlocking {
+        dao.upsert("h3_1", 11, "p10", "p9", "p8", 1000L)
+        dao.upsert("h3_1", 11, "p10", "p9", "p8", 2000L)
+        
+        val allCells = dao.getAllVisitedCells().first()
+        assertEquals(1, allCells.size)
+        assertEquals(2, allCells[0].visitCount)
+        assertEquals(1000L, allCells[0].firstVisitedAt)
+        assertEquals(2000L, allCells[0].lastVisitedAt)
+    }
 }
