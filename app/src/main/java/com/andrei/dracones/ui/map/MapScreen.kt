@@ -27,7 +27,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.andrei.dracones.domain.h3.H3Manager
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -59,10 +58,9 @@ fun MapScreen(
                 uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) },
                 onMapClick = { latLng -> viewModel.markCellVisited(latLng) }
             ) {
-                uiState.visitedCells.forEach { h3Index ->
-                    val boundary = remember(h3Index) { H3Manager.cellToBoundary(h3Index) }
+                uiState.visitedCells.forEach { cell ->
                     Polygon(
-                        points = boundary,
+                        points = cell.boundary,
                         fillColor = Color.Blue.copy(alpha = 0.3f),
                         strokeColor = Color.Blue,
                         strokeWidth = 2f

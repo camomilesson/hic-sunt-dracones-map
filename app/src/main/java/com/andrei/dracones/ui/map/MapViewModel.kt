@@ -18,12 +18,19 @@ class MapViewModel : ViewModel() {
 
     fun markCellVisited(latLng: LatLng) {
         val h3Index = H3Manager.latLngToCell(latLng)
+        
         _uiState.update { state ->
-            state.copy(visitedCells = state.visitedCells + h3Index)
+            if (state.visitedCells.any { it.h3Index == h3Index }) {
+                state
+            } else {
+                val boundary = H3Manager.cellToBoundary(h3Index)
+                val newCell = VisitedCellUiModel(h3Index, boundary)
+                state.copy(visitedCells = state.visitedCells + newCell)
+            }
         }
     }
 
     fun clearVisitedCells() {
-        _uiState.update { it.copy(visitedCells = emptySet()) }
+        _uiState.update { it.copy(visitedCells = emptyList()) }
     }
 }

@@ -1,9 +1,16 @@
 package com.andrei.dracones.ui.map
 
+import com.google.android.gms.maps.model.LatLng
+
+data class VisitedCellUiModel(
+    val h3Index: String,
+    val boundary: List<LatLng>
+)
+
 data class MapUiState(
     val explorerName: String = "",
     val initialCameraPosition: CameraPositionState = CameraPositionState(),
-    val visitedCells: Set<String> = emptySet()
+    val visitedCells: List<VisitedCellUiModel> = emptyList()
 )
 
 data class CameraPositionState(
