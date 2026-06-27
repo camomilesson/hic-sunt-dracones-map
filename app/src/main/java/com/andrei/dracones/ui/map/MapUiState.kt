@@ -12,13 +12,16 @@ data class MapUiState(
     val initialCameraPosition: CameraPositionState = CameraPositionState(),
     val visitedCells: List<VisitedCellUiModel> = emptyList(),
     val isTracking: Boolean = false,
+    val isFollowingUser: Boolean = false,
+    val isWaitingForLocation: Boolean = false,
+    val shouldApplyDefaultZoom: Boolean = false,
     val permissionMessage: String? = null,
     val lastKnownLocation: LatLng? = null,
     val lastVisitedH3Index: String? = null
 )
 
 data class CameraPositionState(
-    val latitude: Double = 41.3851, // Barcelona
-    val longitude: Double = 2.1734,
-    val zoom: Float = 12f
+    val latitude: Double = 0.0, // Center of the world (Atlantic)
+    val longitude: Double = 0.0,
+    val zoom: Float = 2f
 )

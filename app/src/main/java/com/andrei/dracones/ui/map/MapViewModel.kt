@@ -30,9 +30,11 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
     private val boundaryCache = mutableMapOf<String, List<LatLng>>()
+    private val recentH3Cells = ArrayDeque<String>(3)
 
     companion object {
         private const val TAG = "HSD"
+        const val DEFAULT_EXPLORATION_ZOOM = 17f
     }
 
     init {
@@ -63,10 +65,20 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(explorerName = newName) }
     }
 
+    fun setFollowing(enabled: Boolean) {
+        _uiState.update { it.copy(isFollowingUser = enabled) }
+    }
+
     fun startTracking() {
         if (_uiState.value.isTracking) return
 
-        _uiState.update { it.copy(isTracking = true, permissionMessage = null) }
+        _uiState.update { it.copy(
+            isTracking = true, 
+            isFollowingUser = true, 
+            isWaitingForLocation = true,
+            shouldApplyDefaultZoom = true,
+            permissionMessage = null 
+        ) }
         
         trackingJob = locationTracker.getLocationUpdates(5000L)
             .onEach { latLng ->
@@ -80,7 +92,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun stopTracking() {
         trackingJob?.cancel()
         trackingJob = null
-        _uiState.update { it.copy(isTracking = false) }
+        _uiState.update { it.copy(isTracking = false, isFollowingUser = false, isWaitingForLocation = false) }
         Log.d(TAG, "Location tracking stopped")
     }
 
@@ -93,24 +105,38 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun onInitialDiveCompleted() {
+        _uiState.update { it.copy(shouldApplyDefaultZoom = false) }
+    }
+
     private suspend fun processNewLocation(latLng: LatLng) {
         val h3Index = withContext(Dispatchers.Default) {
             H3Manager.latLngToCell(latLng)
         }
 
-        if (h3Index != _uiState.value.lastVisitedH3Index) {
+        val alreadyInRecent = synchronized(recentH3Cells) {
+            recentH3Cells.contains(h3Index)
+        }
+
+        if (!alreadyInRecent) {
             withContext(Dispatchers.IO) {
                 repository.markCellVisited(h3Index)
             }
-            _uiState.update { 
-                it.copy(
-                    lastKnownLocation = latLng,
-                    lastVisitedH3Index = h3Index
-                )
+            synchronized(recentH3Cells) {
+                if (recentH3Cells.size >= 3) {
+                    recentH3Cells.removeFirst()
+                }
+                recentH3Cells.addLast(h3Index)
             }
-            Log.d(TAG, "New cell discovered via tracking: $h3Index")
-        } else {
-            _uiState.update { it.copy(lastKnownLocation = latLng) }
+            Log.d(TAG, "New cell processed via tracking: $h3Index (Buffer: $recentH3Cells)")
+        }
+
+        _uiState.update { 
+            it.copy(
+                lastKnownLocation = latLng,
+                lastVisitedH3Index = h3Index,
+                isWaitingForLocation = false
+            )
         }
     }
 
@@ -129,6 +155,9 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             synchronized(boundaryCache) {
                 boundaryCache.clear()
+            }
+            synchronized(recentH3Cells) {
+                recentH3Cells.clear()
             }
             repository.clearAll()
         }

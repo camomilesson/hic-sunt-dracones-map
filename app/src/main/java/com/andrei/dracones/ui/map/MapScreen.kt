@@ -13,16 +13,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -33,8 +37,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
 import com.google.maps.android.compose.Marker
@@ -63,6 +69,28 @@ fun MapScreen(
             LatLng(uiState.initialCameraPosition.latitude, uiState.initialCameraPosition.longitude),
             uiState.initialCameraPosition.zoom
         )
+    }
+
+    LaunchedEffect(cameraPositionState.isMoving) {
+        if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
+            viewModel.setFollowing(false)
+        }
+    }
+
+    LaunchedEffect(uiState.lastKnownLocation, uiState.isFollowingUser) {
+        val location = uiState.lastKnownLocation
+        if (uiState.isFollowingUser && location != null) {
+            val currentZoom = cameraPositionState.position.zoom
+            val targetZoom = if (uiState.shouldApplyDefaultZoom) MapViewModel.DEFAULT_EXPLORATION_ZOOM else currentZoom
+            
+            cameraPositionState.animate(
+                CameraUpdateFactory.newLatLngZoom(location, targetZoom)
+            )
+            
+            if (uiState.shouldApplyDefaultZoom) {
+                viewModel.onInitialDiveCompleted()
+            }
+        }
     }
 
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
@@ -134,13 +162,39 @@ fun MapScreen(
                                 text = "Tracking active" + (uiState.lastVisitedH3Index?.let { " - $it" } ?: ""),
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         } else {
                             Text(
                                 text = "Tracking stopped",
                                 style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                        
+                        if (uiState.isWaitingForLocation) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(12.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Waiting for GPS fix...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        } else {
+                            Text(
+                                text = if (uiState.isFollowingUser) "Following user" else "Camera manual",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (uiState.isFollowingUser) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
 
@@ -188,6 +242,20 @@ fun MapScreen(
                                 }
                             ) {
                                 Text(if (uiState.isTracking) "Stop Tracking" else "Start Tracking")
+                            }
+
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            OutlinedButton(
+                                onClick = { viewModel.setFollowing(!uiState.isFollowingUser) },
+                                modifier = Modifier.weight(1f),
+                                colors = if (uiState.isFollowingUser) {
+                                    ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
+                                } else {
+                                    ButtonDefaults.outlinedButtonColors()
+                                }
+                            ) {
+                                Text(if (uiState.isFollowingUser) "Following" else "Follow Me")
                             }
                         }
                         Spacer(modifier = Modifier.height(8.dp))
