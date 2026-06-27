@@ -1,15 +1,16 @@
 *.iml
 .gradle
 /local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
+/.idea/
 .DS_Store
 /build
 /captures
 .externalNativeBuild
 .cxx
-local.properties
+# Package Files #
+*.jar
+*.aar
+
+# jniLibs should be tracked if manually added, but usually we ignore generated ones.
+# In this case, we WANT to track the professor's libh3-java.so
+!app/src/main/jniLibs/**

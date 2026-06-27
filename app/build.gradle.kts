@@ -60,6 +60,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.google.maps.compose)
     implementation(libs.play.services.maps)
+    implementation(libs.h3)
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

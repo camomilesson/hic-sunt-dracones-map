@@ -2,7 +2,8 @@ package com.andrei.dracones.ui.map
 
 data class MapUiState(
     val explorerName: String = "",
-    val initialCameraPosition: CameraPositionState = CameraPositionState()
+    val initialCameraPosition: CameraPositionState = CameraPositionState(),
+    val visitedCells: Set<String> = emptySet()
 )
 
 data class CameraPositionState(
