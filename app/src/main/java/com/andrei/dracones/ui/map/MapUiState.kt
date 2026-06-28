@@ -16,7 +16,8 @@ data class MapUiState(
     val shouldApplyDefaultZoom: Boolean = false,
     val permissionMessage: String? = null,
     val lastKnownLocation: LatLng? = null,
-    val lastVisitedH3Index: String? = null
+    val lastVisitedH3Index: String? = null,
+    val fogOpacity: Float = 0.80f
 )
 
 data class CameraPositionState(

@@ -53,7 +53,7 @@ fun AppNavigation() {
 
     Scaffold(
         bottomBar = {
-            val currentDestination = backStack.lastOrNull()
+            val currentDestination = backStack.lastOrNull() as? Destination
             NavigationBar {
                 NavigationBarItem(
                     selected = currentDestination == Destination.Progress,

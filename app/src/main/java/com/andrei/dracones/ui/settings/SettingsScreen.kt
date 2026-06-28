@@ -22,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Slider
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.andrei.dracones.ui.map.MapViewModel
 
@@ -31,6 +33,7 @@ fun SettingsScreen(
     // Reusing MapViewModel for simplicity as it already has access to repository and handles caches
     viewModel: MapViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
 
     if (showDialog) {
@@ -76,6 +79,27 @@ fun SettingsScreen(
             )
             
             Spacer(modifier = Modifier.height(48.dp))
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "Fog Opacity: ${(uiState.fogOpacity * 100).toInt()}%",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Slider(
+                    value = uiState.fogOpacity,
+                    onValueChange = { viewModel.setFogOpacity(it) },
+                    valueRange = 0.5f..1.0f,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
                 onClick = { showDialog = true },

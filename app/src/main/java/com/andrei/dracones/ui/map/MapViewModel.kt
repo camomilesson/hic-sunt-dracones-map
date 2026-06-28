@@ -1,7 +1,10 @@
 package com.andrei.dracones.ui.map
 
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.andrei.dracones.data.persistence.AppDatabase
@@ -26,6 +29,16 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val locationTracker = LocationTracker(application)
     private var trackingJob: Job? = null
 
+    private val sharedPrefs: SharedPreferences = application.getSharedPreferences("dracones_settings", Context.MODE_PRIVATE)
+
+    private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+        if (key == "fog_opacity") {
+            val opacity = sharedPrefs.getFloat("fog_opacity", 0.80f)
+            _uiState.update { it.copy(fogOpacity = opacity) }
+            Log.d(TAG, "Fog opacity updated from shared preferences change: $opacity")
+        }
+    }
+
     private val _uiState = MutableStateFlow(MapUiState())
     val uiState: StateFlow<MapUiState> = _uiState.asStateFlow()
 
@@ -38,6 +51,10 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     init {
+        sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
+        val initialOpacity = sharedPrefs.getFloat("fog_opacity", 0.80f)
+        _uiState.update { it.copy(fogOpacity = initialOpacity) }
+
         val database = AppDatabase.getDatabase(application)
         repository = ExplorationRepository(database.visitedCellDao())
         
@@ -159,8 +176,14 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun setFogOpacity(opacity: Float) {
+        sharedPrefs.edit { putFloat("fog_opacity", opacity) }
+        _uiState.update { it.copy(fogOpacity = opacity) }
+    }
+
     override fun onCleared() {
         super.onCleared()
+        sharedPrefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
         stopTracking()
     }
 }

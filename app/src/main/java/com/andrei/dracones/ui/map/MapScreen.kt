@@ -45,6 +45,9 @@ import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
 
+private const val MIN_ZOOM_FOR_FOG = 15f
+private val FOG_BASE_COLOR = Color(0xFFE0D2B8)
+
 @Composable
 fun MapScreen(
     modifier: Modifier = Modifier,
@@ -97,13 +100,50 @@ fun MapScreen(
             uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) },
             onMapClick = { latLng -> viewModel.markCellVisited(latLng) }
         ) {
-            uiState.visitedCells.forEach { cell ->
-                Polygon(
-                    points = cell.boundary,
-                    fillColor = Color.Blue.copy(alpha = 0.3f),
-                    strokeColor = Color.Blue,
-                    strokeWidth = 2f
-                )
+            val currentZoom = cameraPositionState.position.zoom
+            if (currentZoom >= MIN_ZOOM_FOR_FOG) {
+                val projection = cameraPositionState.projection
+                val visibleRegion = projection?.visibleRegion
+                val bounds = visibleRegion?.latLngBounds
+
+                if (bounds != null) {
+                    val latSpan = bounds.northeast.latitude - bounds.southwest.latitude
+                    val lngSpan = bounds.northeast.longitude - bounds.southwest.longitude
+
+                    // Pad the bounds slightly so the fog does not show hard edges during small camera movements
+                    val latPadding = latSpan * 0.2
+                    val lngPadding = lngSpan * 0.2
+
+                    val south = bounds.southwest.latitude - latPadding
+                    val north = bounds.northeast.latitude + latPadding
+                    val west = bounds.southwest.longitude - lngPadding
+                    val east = bounds.northeast.longitude + lngPadding
+
+                    val outerPolygonPoints = listOf(
+                        LatLng(south, west),
+                        LatLng(north, west),
+                        LatLng(north, east),
+                        LatLng(south, east)
+                    )
+
+                    // Filter holes to cells that are within or near the visible map bounds
+                    val holes = uiState.visitedCells
+                        .filter { cell ->
+                            cell.boundary.any { point ->
+                                point.latitude in south..north &&
+                                point.longitude in west..east
+                            }
+                        }
+                        .map { it.boundary }
+
+                    Polygon(
+                        points = outerPolygonPoints,
+                        holes = holes,
+                        fillColor = FOG_BASE_COLOR.copy(alpha = uiState.fogOpacity),
+                        strokeColor = Color.Transparent,
+                        strokeWidth = 0f
+                    )
+                }
             }
 
             uiState.lastKnownLocation?.let { location ->
