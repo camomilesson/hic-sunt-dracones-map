@@ -256,7 +256,8 @@ fun MapScreen(
                         holes = holes,
                         fillColor = fogColor.copy(alpha = uiState.fogOpacity),
                         strokeColor = Color.Transparent,
-                        strokeWidth = 0f
+                        strokeWidth = 0f,
+                        zIndex = 1f
                     )
 
                     // Cover unexplored pocket islands back up with solid fog
@@ -265,7 +266,8 @@ fun MapScreen(
                             points = pocket,
                             fillColor = fogColor.copy(alpha = uiState.fogOpacity),
                             strokeColor = Color.Transparent,
-                            strokeWidth = 0f
+                            strokeWidth = 0f,
+                            zIndex = 1f
                         )
                     }
                 }
@@ -285,7 +287,8 @@ fun MapScreen(
                     points = region.boundary,
                     fillColor = Color(0xFFFFB300).copy(alpha = 0.25f),
                     strokeColor = Color(0xFFFFB300),
-                    strokeWidth = 8f
+                    strokeWidth = 8f,
+                    zIndex = 2f
                 )
             }
         }
