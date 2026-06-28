@@ -7,12 +7,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -22,16 +20,10 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun ProgressScreen(
-    explorerName: String,
-    onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProgressViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(explorerName) {
-        viewModel.setExplorerName(explorerName)
-    }
 
     Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
         Column(
@@ -43,29 +35,14 @@ fun ProgressScreen(
             verticalArrangement = Arrangement.Top
         ) {
             Text(
-                text = "Explorer: ${uiState.explorerName}",
-                style = MaterialTheme.typography.headlineSmall
+                text = "Discovery Statistics",
+                style = MaterialTheme.typography.headlineMedium
             )
             Spacer(modifier = Modifier.height(24.dp))
             
-            Text(
-                text = "Discovery Statistics",
-                style = MaterialTheme.typography.titleMedium
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-
             StatRow(label = "Nearby Region", progress = uiState.nearbyRegionProgress)
             StatRow(label = "District Region", progress = uiState.districtRegionProgress)
             StatRow(label = "Greater Region", progress = uiState.greaterRegionProgress)
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            Button(
-                onClick = onNavigateBack,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Back to Map")
-            }
         }
     }
 }

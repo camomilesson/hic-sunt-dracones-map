@@ -8,7 +8,6 @@ data class VisitedCellUiModel(
 )
 
 data class MapUiState(
-    val explorerName: String = "",
     val initialCameraPosition: CameraPositionState = CameraPositionState(),
     val visitedCells: List<VisitedCellUiModel> = emptyList(),
     val isTracking: Boolean = false,

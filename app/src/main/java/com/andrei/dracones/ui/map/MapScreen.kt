@@ -9,21 +9,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.ShareLocation
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,6 +29,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -50,7 +47,6 @@ import com.google.maps.android.compose.rememberCameraPositionState
 
 @Composable
 fun MapScreen(
-    onNavigateToProgress: (String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MapViewModel = viewModel()
 ) {
@@ -93,195 +89,135 @@ fun MapScreen(
         }
     }
 
-    Scaffold(modifier = modifier.fillMaxSize()) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
-            // Google Map layer
-            GoogleMap(
-                modifier = Modifier.fillMaxSize(),
-                cameraPositionState = cameraPositionState,
-                uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) },
-                onMapClick = { latLng -> viewModel.markCellVisited(latLng) }
-            ) {
-                uiState.visitedCells.forEach { cell ->
-                    Polygon(
-                        points = cell.boundary,
-                        fillColor = Color.Blue.copy(alpha = 0.3f),
-                        strokeColor = Color.Blue,
-                        strokeWidth = 2f
-                    )
-                }
+    Box(modifier = modifier.fillMaxSize()) {
+        // Google Maps layer
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) },
+            onMapClick = { latLng -> viewModel.markCellVisited(latLng) }
+        ) {
+            uiState.visitedCells.forEach { cell ->
+                Polygon(
+                    points = cell.boundary,
+                    fillColor = Color.Blue.copy(alpha = 0.3f),
+                    strokeColor = Color.Blue,
+                    strokeWidth = 2f
+                )
+            }
 
-                uiState.lastKnownLocation?.let { location ->
-                    Marker(
-                        state = MarkerState(position = location),
-                        title = "Current Position",
-                        alpha = 0.8f
+            uiState.lastKnownLocation?.let { location ->
+                Marker(
+                    state = MarkerState(position = location),
+                    title = "Current Position",
+                    alpha = 0.8f
+                )
+            }
+        }
+
+        // Title and Slogan Overlay (Top)
+        Column(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 48.dp, start = 16.dp, end = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Hic Sunt Dracones",
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    shadow = Shadow(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        blurRadius = 8f
+                    )
+                ),
+                color = Color.White
+            )
+            Text(
+                text = "Uncover the world around you.",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    shadow = Shadow(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        blurRadius = 8f
+                    )
+                ),
+                color = Color.White
+            )
+            
+            uiState.permissionMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            if (uiState.isWaitingForLocation) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Waiting for GPS fix...",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White
                     )
                 }
             }
+        }
 
-            // UI Overlay
-            Column(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .fillMaxWidth()
-                    .imePadding(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f)
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            text = "Hic Sunt Dracones",
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Text(
-                            text = "Uncover the world around you.",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        
-                        uiState.permissionMessage?.let { message ->
-                            Text(
-                                text = message,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
+        // Floating Controls (Bottom End)
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 16.dp, end = 16.dp),
+            horizontalAlignment = Alignment.End
+        ) {
+            ExtendedFloatingActionButton(
+                text = { Text("Follow") },
+                icon = { Icon(Icons.Default.MyLocation, contentDescription = null) },
+                onClick = { viewModel.setFollowing(!uiState.isFollowingUser) },
+                containerColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                contentColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            ExtendedFloatingActionButton(
+                text = { Text("Track") },
+                icon = { Icon(Icons.Default.ShareLocation, contentDescription = null) },
+                onClick = {
+                    if (uiState.isTracking) {
+                        viewModel.stopTracking()
+                    } else {
+                        val fineLocation = ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.ACCESS_FINE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
+                        val coarseLocation = ContextCompat.checkSelfPermission(
+                            context, Manifest.permission.ACCESS_COARSE_LOCATION
+                        ) == PackageManager.PERMISSION_GRANTED
 
-                        if (uiState.isTracking) {
-                            Text(
-                                text = "Tracking active" + (uiState.lastVisitedH3Index?.let { " - $it" } ?: ""),
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
+                        if (fineLocation && coarseLocation) {
+                            viewModel.startTracking()
                         } else {
-                            Text(
-                                text = "Tracking stopped",
-                                style = MaterialTheme.typography.bodySmall,
-                                modifier = Modifier.padding(top = 4.dp)
+                            permissionLauncher.launch(
+                                arrayOf(
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                    Manifest.permission.ACCESS_COARSE_LOCATION
+                                )
                             )
-                        }
-                        
-                        if (uiState.isWaitingForLocation) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(12.dp),
-                                    strokeWidth = 2.dp,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "Waiting for GPS fix...",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        } else {
-                            Text(
-                                text = if (uiState.isFollowingUser) "Following user" else "Camera manual",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (uiState.isFollowingUser) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.padding(top = 4.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(16.dp))
-                        OutlinedTextField(
-                            value = uiState.explorerName,
-                            onValueChange = { viewModel.onExplorerNameChanged(it) },
-                            label = { Text("Explorer Name") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Button(
-                                onClick = {
-                                    if (uiState.isTracking) {
-                                        viewModel.stopTracking()
-                                    } else {
-                                        val fineLocation = ContextCompat.checkSelfPermission(
-                                            context, Manifest.permission.ACCESS_FINE_LOCATION
-                                        ) == PackageManager.PERMISSION_GRANTED
-                                        val coarseLocation = ContextCompat.checkSelfPermission(
-                                            context, Manifest.permission.ACCESS_COARSE_LOCATION
-                                        ) == PackageManager.PERMISSION_GRANTED
-
-                                        if (fineLocation && coarseLocation) {
-                                            viewModel.startTracking()
-                                        } else {
-                                            permissionLauncher.launch(
-                                                arrayOf(
-                                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                                )
-                                            )
-                                        }
-                                    }
-                                },
-                                modifier = Modifier.weight(1f),
-                                colors = if (uiState.isTracking) {
-                                    ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
-                                } else {
-                                    ButtonDefaults.buttonColors()
-                                }
-                            ) {
-                                Text(if (uiState.isTracking) "Stop Tracking" else "Start Tracking")
-                            }
-
-                            Spacer(modifier = Modifier.width(8.dp))
-
-                            OutlinedButton(
-                                onClick = { viewModel.setFollowing(!uiState.isFollowingUser) },
-                                modifier = Modifier.weight(1f),
-                                colors = if (uiState.isFollowingUser) {
-                                    ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
-                                } else {
-                                    ButtonDefaults.outlinedButtonColors()
-                                }
-                            ) {
-                                Text(if (uiState.isFollowingUser) "Following" else "Follow Me")
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Button(
-                                onClick = { onNavigateToProgress(uiState.explorerName) },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Open Progress")
-                            }
-                            OutlinedButton(
-                                onClick = { viewModel.clearVisitedCells() },
-                                modifier = Modifier.padding(start = 8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = MaterialTheme.colorScheme.error
-                                )
-                            ) {
-                                Text("Clear")
-                            }
                         }
                     }
-                }
-            }
+                },
+                containerColor = if (uiState.isTracking) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                contentColor = if (uiState.isTracking) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }

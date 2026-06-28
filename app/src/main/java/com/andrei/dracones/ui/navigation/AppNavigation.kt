@@ -1,12 +1,23 @@
 package com.andrei.dracones.ui.navigation
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Map
+import androidx.compose.material.icons.filled.QueryStats
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.andrei.dracones.ui.map.MapScreen
 import com.andrei.dracones.ui.progress.ProgressScreen
+import com.andrei.dracones.ui.settings.SettingsScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -15,7 +26,10 @@ sealed interface Destination : NavKey {
     data object Map : Destination
 
     @Serializable
-    data class Progress(val explorerName: String) : Destination
+    data object Progress : Destination
+
+    @Serializable
+    data object Settings : Destination
 }
 
 @Composable
@@ -24,32 +38,59 @@ fun AppNavigation() {
 
     val entryProvider: (NavKey) -> NavEntry<NavKey> = { key ->
         when (key) {
-            is Destination.Map -> NavEntry(
-                key = key,
-            ) {
-                MapScreen(
-                    onNavigateToProgress = { name ->
-                        backStack.add(Destination.Progress(name))
-                    }
-                )
+            is Destination.Map -> NavEntry(key = key) {
+                MapScreen()
             }
-            is Destination.Progress -> NavEntry(
-                key = key,
-            ) {
-                ProgressScreen(
-                    explorerName = key.explorerName,
-                    onNavigateBack = {
-                        backStack.removeLastOrNull()
-                    }
-                )
+            is Destination.Progress -> NavEntry(key = key) {
+                ProgressScreen()
+            }
+            is Destination.Settings -> NavEntry(key = key) {
+                SettingsScreen()
             }
             else -> error("Unknown destination: $key")
         }
     }
 
-    NavDisplay(
-        backStack = backStack,
-        onBack = { backStack.removeLastOrNull() },
-        entryProvider = entryProvider
-    )
+    Scaffold(
+        bottomBar = {
+            val currentDestination = backStack.lastOrNull()
+            NavigationBar {
+                NavigationBarItem(
+                    selected = currentDestination == Destination.Progress,
+                    onClick = {
+                        if (currentDestination != Destination.Progress) {
+                            backStack.add(Destination.Progress)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.QueryStats, contentDescription = null) }
+                )
+                NavigationBarItem(
+                    selected = currentDestination == Destination.Map || currentDestination == null,
+                    onClick = {
+                        if (currentDestination != Destination.Map) {
+                            backStack.clear()
+                            backStack.add(Destination.Map)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Map, contentDescription = null) }
+                )
+                NavigationBarItem(
+                    selected = currentDestination == Destination.Settings,
+                    onClick = {
+                        if (currentDestination != Destination.Settings) {
+                            backStack.add(Destination.Settings)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Settings, contentDescription = null) }
+                )
+            }
+        }
+    ) { innerPadding ->
+        NavDisplay(
+            modifier = Modifier.padding(innerPadding),
+            backStack = backStack,
+            onBack = { backStack.removeLastOrNull() },
+            entryProvider = entryProvider
+        )
+    }
 }

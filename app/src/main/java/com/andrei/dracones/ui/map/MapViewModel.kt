@@ -61,10 +61,6 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             .launchIn(viewModelScope)
     }
 
-    fun onExplorerNameChanged(newName: String) {
-        _uiState.update { it.copy(explorerName = newName) }
-    }
-
     fun setFollowing(enabled: Boolean) {
         _uiState.update { it.copy(isFollowingUser = enabled) }
     }
