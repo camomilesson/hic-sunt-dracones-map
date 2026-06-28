@@ -166,8 +166,7 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             properties = mapProperties,
-            uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) },
-            onMapClick = { latLng -> viewModel.markCellVisited(latLng) }
+            uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) }
         ) {
             val currentZoom = cameraPositionState.position.zoom
             if (currentZoom >= MIN_ZOOM_FOR_FOG) {
