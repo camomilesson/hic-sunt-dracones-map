@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -54,15 +55,36 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
                 val totalCells = entities.size
                 val totalArea = totalCells * 0.00249
 
-                // 2. Discoveries over time (Today, Week, Month rolling timeframes)
-                val now = System.currentTimeMillis()
-                val oneDayMs = 24 * 60 * 60 * 1000L
-                val sevenDaysMs = 7 * oneDayMs
-                val thirtyDaysMs = 30 * oneDayMs
+                // 2. Discoveries over time (Calendar-based: Today, This Week, This Month)
+                val startOfToday = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
 
-                val todayCount = entities.count { it.firstVisitedAt >= now - oneDayMs }
-                val weekCount = entities.count { it.firstVisitedAt >= now - sevenDaysMs }
-                val monthCount = entities.count { it.firstVisitedAt >= now - thirtyDaysMs }
+                val startOfWeek = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                    set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+                    if (timeInMillis > System.currentTimeMillis()) {
+                        add(Calendar.DAY_OF_YEAR, -7)
+                    }
+                }.timeInMillis
+
+                val startOfMonth = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, 0)
+                    set(Calendar.MINUTE, 0)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                    set(Calendar.DAY_OF_MONTH, 1)
+                }.timeInMillis
+
+                val todayCount = entities.count { it.firstVisitedAt >= startOfToday }
+                val weekCount = entities.count { it.firstVisitedAt >= startOfWeek }
+                val monthCount = entities.count { it.firstVisitedAt >= startOfMonth }
 
                 // 3. Total footsteps sum
                 val totalFootstepsSum = entities.sumOf { it.visitCount.toLong() }
