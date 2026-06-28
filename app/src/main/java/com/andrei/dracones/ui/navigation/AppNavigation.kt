@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface Destination : NavKey {
     @Serializable
-    data object Map : Destination
+    data class Map(val parentH3Index: String? = null, val parentResolution: Int? = null) : Destination
 
     @Serializable
     data object Progress : Destination
@@ -34,15 +34,23 @@ sealed interface Destination : NavKey {
 
 @Composable
 fun AppNavigation() {
-    val backStack = rememberNavBackStack(Destination.Map)
+    val backStack = rememberNavBackStack(Destination.Map())
 
     val entryProvider: (NavKey) -> NavEntry<NavKey> = { key ->
         when (key) {
             is Destination.Map -> NavEntry(key = key) {
-                MapScreen()
+                MapScreen(
+                    parentH3Index = key.parentH3Index,
+                    parentResolution = key.parentResolution
+                )
             }
             is Destination.Progress -> NavEntry(key = key) {
-                ProgressScreen()
+                ProgressScreen(
+                    onNavigateToMap = { parentH3, res ->
+                        backStack.clear()
+                        backStack.add(Destination.Map(parentH3, res))
+                    }
+                )
             }
             is Destination.Settings -> NavEntry(key = key) {
                 SettingsScreen()
@@ -56,11 +64,11 @@ fun AppNavigation() {
             val currentDestination = backStack.lastOrNull() as? Destination
             NavigationBar {
                 NavigationBarItem(
-                    selected = currentDestination == Destination.Map || currentDestination == null,
+                    selected = currentDestination is Destination.Map || currentDestination == null,
                     onClick = {
-                        if (currentDestination != Destination.Map) {
+                        if (currentDestination !is Destination.Map) {
                             backStack.clear()
-                            backStack.add(Destination.Map)
+                            backStack.add(Destination.Map())
                         }
                     },
                     icon = { Icon(Icons.Default.Map, contentDescription = null) }

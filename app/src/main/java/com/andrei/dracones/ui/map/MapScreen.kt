@@ -39,6 +39,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
@@ -104,10 +105,19 @@ private fun buildMapStyleJson(
 @Composable
 fun MapScreen(
     modifier: Modifier = Modifier,
-    viewModel: MapViewModel = viewModel()
+    viewModel: MapViewModel = viewModel(),
+    parentH3Index: String? = null,
+    parentResolution: Int? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // Trigger focus if passed via navigation
+    LaunchedEffect(parentH3Index, parentResolution) {
+        if (parentH3Index != null && parentResolution != null) {
+            viewModel.setFocusedRegion(parentH3Index, parentResolution)
+        }
+    }
 
     val mapStyleJson = remember(uiState.showBusinesses, uiState.showTransit, uiState.showOtherPoi, uiState.mapTheme) {
         buildMapStyleJson(
@@ -138,9 +148,30 @@ fun MapScreen(
         )
     }
 
+    // Camera animation to fit the focused region bounds
+    LaunchedEffect(uiState.focusedRegion) {
+        val region = uiState.focusedRegion
+        if (region != null) {
+            val builder = LatLngBounds.builder()
+            region.boundary.forEach { builder.include(it) }
+            val bounds = builder.build()
+            try {
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngBounds(bounds, 120)
+                )
+            } catch (_: Exception) {
+                // Fallback if map layout isn't fully ready yet
+                cameraPositionState.animate(
+                    CameraUpdateFactory.newLatLngZoom(bounds.center, 15f)
+                )
+            }
+        }
+    }
+
     LaunchedEffect(cameraPositionState.isMoving) {
         if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
             viewModel.setFollowing(false)
+            viewModel.clearFocusedRegion()
         }
     }
 
@@ -166,7 +197,8 @@ fun MapScreen(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
             properties = mapProperties,
-            uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) }
+            uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) },
+            onMapClick = { viewModel.clearFocusedRegion() }
         ) {
             val currentZoom = cameraPositionState.position.zoom
             if (currentZoom >= MIN_ZOOM_FOR_FOG) {
@@ -244,6 +276,16 @@ fun MapScreen(
                     state = MarkerState(position = location),
                     title = "Current Position",
                     alpha = 0.8f
+                )
+            }
+
+            // Draw highlight overlay for the focused region
+            uiState.focusedRegion?.let { region ->
+                Polygon(
+                    points = region.boundary,
+                    fillColor = Color(0xFFFFB300).copy(alpha = 0.25f),
+                    strokeColor = Color(0xFFFFB300),
+                    strokeWidth = 8f
                 )
             }
         }

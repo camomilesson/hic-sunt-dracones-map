@@ -1,5 +1,6 @@
 package com.andrei.dracones.ui.progress
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,7 +28,8 @@ import java.util.Locale
 @Composable
 fun ProgressScreen(
     modifier: Modifier = Modifier,
-    viewModel: ProgressViewModel = viewModel()
+    viewModel: ProgressViewModel = viewModel(),
+    onNavigateToMap: ((parentH3Index: String, parentResolution: Int) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -57,9 +59,27 @@ fun ProgressScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
-            StatProgressRow(label = "Nearby Block", progress = uiState.nearbyRegionProgress)
-            StatProgressRow(label = "Local Neighborhood", progress = uiState.districtRegionProgress)
-            StatProgressRow(label = "Greater District", progress = uiState.greaterRegionProgress)
+            StatProgressRow(
+                label = "Nearby Block", 
+                progress = uiState.nearbyRegionProgress,
+                onClick = uiState.blockParentH3?.let { h3 ->
+                    { onNavigateToMap?.invoke(h3, 10) }
+                }
+            )
+            StatProgressRow(
+                label = "Local Neighborhood", 
+                progress = uiState.districtRegionProgress,
+                onClick = uiState.neighborhoodParentH3?.let { h3 ->
+                    { onNavigateToMap?.invoke(h3, 9) }
+                }
+            )
+            StatProgressRow(
+                label = "Greater District", 
+                progress = uiState.greaterRegionProgress,
+                onClick = uiState.districtParentH3?.let { h3 ->
+                    { onNavigateToMap?.invoke(h3, 8) }
+                }
+            )
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
@@ -74,7 +94,7 @@ fun ProgressScreen(
             StatValueRow(label = "Total Cells Uncovered", value = "${uiState.totalCellsExplored}")
             StatValueRow(
                 label = "Total Area Uncovered", 
-                value = String.format(Locale.getDefault(), "%.4f km²", uiState.totalAreaKm2)
+                value = String.format(Locale.getDefault(), "~%.4f km²", uiState.totalAreaKm2)
             )
             StatValueRow(label = "Movement Logs Collected", value = "${uiState.totalFootsteps}")
 
@@ -109,10 +129,15 @@ fun ProgressScreen(
 }
 
 @Composable
-fun StatProgressRow(label: String, progress: Int) {
+fun StatProgressRow(
+    label: String, 
+    progress: Int,
+    onClick: (() -> Unit)? = null
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(vertical = 8.dp)
     ) {
         Row(

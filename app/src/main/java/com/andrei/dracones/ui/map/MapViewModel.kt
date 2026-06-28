@@ -189,7 +189,8 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             it.copy(
                 lastKnownLocation = latLng,
                 lastVisitedH3Index = h3Index,
-                isWaitingForLocation = false
+                isWaitingForLocation = false,
+                focusedRegion = null
             )
         }
     }
@@ -245,6 +246,32 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun setFogColorName(colorName: String) {
         sharedPrefs.edit { putString("fog_color_name", colorName) }
         _uiState.update { it.copy(fogColorName = colorName) }
+    }
+
+    fun setFocusedRegion(parentH3Index: String?, resolution: Int?) {
+        if (parentH3Index == null || resolution == null) {
+            _uiState.update { it.copy(focusedRegion = null) }
+            return
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            val boundary = H3Manager.cellToBoundary(parentH3Index)
+            _uiState.update {
+                it.copy(
+                    focusedRegion = FocusedRegionUiModel(
+                        parentH3Index = parentH3Index,
+                        resolution = resolution,
+                        boundary = boundary
+                    )
+                )
+            }
+        }
+    }
+
+    fun clearFocusedRegion() {
+        if (_uiState.value.focusedRegion != null) {
+            _uiState.update { it.copy(focusedRegion = null) }
+            Log.d(TAG, "Focused region cleared")
+        }
     }
 
     override fun onCleared() {

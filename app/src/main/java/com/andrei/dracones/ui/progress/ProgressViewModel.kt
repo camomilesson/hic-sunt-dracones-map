@@ -108,7 +108,10 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
                         cellsThisMonth = monthCount,
                         totalFootsteps = totalFootstepsSum,
                         mostActiveDayDate = activeDayDate,
-                        mostActiveDayCount = activeDayCount
+                        mostActiveDayCount = activeDayCount,
+                        blockParentH3 = blockParent,
+                        neighborhoodParentH3 = neighborhoodParent,
+                        districtParentH3 = districtParent
                     )
                 }
             }

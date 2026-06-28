@@ -24,7 +24,14 @@ data class MapUiState(
     val showTransit: Boolean = true,
     val showOtherPoi: Boolean = true,
     val mapTheme: String = "Default",
-    val fogColorName: String = "Parchment"
+    val fogColorName: String = "Parchment",
+    val focusedRegion: FocusedRegionUiModel? = null
+)
+
+data class FocusedRegionUiModel(
+    val parentH3Index: String,
+    val resolution: Int,
+    val boundary: List<LatLng>
 )
 
 data class CameraPositionState(

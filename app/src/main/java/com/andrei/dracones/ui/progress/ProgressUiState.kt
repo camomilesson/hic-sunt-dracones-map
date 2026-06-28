@@ -11,5 +11,8 @@ data class ProgressUiState(
     val cellsThisMonth: Int = 0,
     val totalFootsteps: Long = 0L,
     val mostActiveDayDate: String = "N/A",
-    val mostActiveDayCount: Int = 0
+    val mostActiveDayCount: Int = 0,
+    val blockParentH3: String? = null,
+    val neighborhoodParentH3: String? = null,
+    val districtParentH3: String? = null
 )
