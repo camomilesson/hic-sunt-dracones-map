@@ -35,3 +35,6 @@ The project uses Firebase Crashlytics for error reporting.
 - **Customizable Map**: Choose between Default, Parchment, and Night themes.
 - **Fog of War**: Persistent exploration data stored locally using Room.
 - **Foreground Tracking**: Continue exploring even when the app is in the background via a persistent notification.
+
+
+
