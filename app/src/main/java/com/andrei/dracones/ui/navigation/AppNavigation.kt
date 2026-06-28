@@ -56,15 +56,6 @@ fun AppNavigation() {
             val currentDestination = backStack.lastOrNull() as? Destination
             NavigationBar {
                 NavigationBarItem(
-                    selected = currentDestination == Destination.Progress,
-                    onClick = {
-                        if (currentDestination != Destination.Progress) {
-                            backStack.add(Destination.Progress)
-                        }
-                    },
-                    icon = { Icon(Icons.Default.QueryStats, contentDescription = null) }
-                )
-                NavigationBarItem(
                     selected = currentDestination == Destination.Map || currentDestination == null,
                     onClick = {
                         if (currentDestination != Destination.Map) {
@@ -73,6 +64,15 @@ fun AppNavigation() {
                         }
                     },
                     icon = { Icon(Icons.Default.Map, contentDescription = null) }
+                )
+                NavigationBarItem(
+                    selected = currentDestination == Destination.Progress,
+                    onClick = {
+                        if (currentDestination != Destination.Progress) {
+                            backStack.add(Destination.Progress)
+                        }
+                    },
+                    icon = { Icon(Icons.Default.QueryStats, contentDescription = null) }
                 )
                 NavigationBarItem(
                     selected = currentDestination == Destination.Settings,
