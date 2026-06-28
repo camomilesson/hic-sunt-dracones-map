@@ -80,17 +80,6 @@ fun SettingsScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top,
         ) {
-            Text(
-                text = "Hic Sunt Dracones",
-                style = MaterialTheme.typography.headlineMedium,
-            )
-            Text(
-                text = "Uncover the world around you.",
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-
             // Traveler Name Section
             OutlinedTextField(
                 value = uiState.travelerName,

@@ -323,18 +323,13 @@ fun MapScreen(
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 48.dp, start = 16.dp, end = 16.dp),
+                .padding(top = 36.dp, start = 16.dp, end = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = "Hic Sunt Dracones",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    shadow = Shadow(
-                        color = Color.Black.copy(alpha = 0.5f),
-                        blurRadius = 8f
-                    )
-                ),
-                color = Color.White
+                style = MaterialTheme.typography.headlineLarge,
+                color = Color(0xFF3B342C)
             )
 
             val greetingName = uiState.travelerName.trim()
@@ -347,13 +342,8 @@ fun MapScreen(
 
             Text(
                 text = greeting,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    shadow = Shadow(
-                        color = Color.Black.copy(alpha = 0.5f),
-                        blurRadius = 8f
-                    )
-                ),
-                color = Color.White
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color(0xFF4A4035)
             )
 
             uiState.permissionMessage?.let { message ->
