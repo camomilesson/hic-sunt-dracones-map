@@ -99,7 +99,7 @@ fun ProgressScreen(
             StatValueRow(label = "Total Cells Uncovered", value = uiState.totalCellsExplored.toString())
             StatValueRow(
                 label = "Total Area Uncovered", 
-                value = String.format(Locale.getDefault(), "~%.4f km²", uiState.totalAreaKm2)
+                value = String.format(Locale.getDefault(), "~%.1f km²", uiState.totalAreaKm2)
             )
             StatValueRow(label = "Movement Logs Collected", value = uiState.totalFootsteps.toString())
 

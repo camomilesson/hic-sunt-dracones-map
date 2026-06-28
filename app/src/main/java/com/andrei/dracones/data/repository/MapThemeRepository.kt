@@ -5,13 +5,17 @@ import com.andrei.dracones.data.model.MapStyleRuleModel
 import com.andrei.dracones.data.model.MapThemeModel
 import com.andrei.dracones.data.persistence.MapThemeCacheDao
 import com.andrei.dracones.data.persistence.MapThemeCacheEntity
+import com.andrei.dracones.data.remote.MapThemeApi
+import com.andrei.dracones.data.remote.RetrofitInstance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.net.HttpURLConnection
-import java.net.URL
 
-class MapThemeRepository(private val cacheDao: MapThemeCacheDao) {
+class MapThemeRepository(
+    private val cacheDao: MapThemeCacheDao,
+    private val mapThemeApi: MapThemeApi = RetrofitInstance.mapThemeApi
+) {
 
     private val json = Json {
         ignoreUnknownKeys = true
@@ -47,15 +51,22 @@ class MapThemeRepository(private val cacheDao: MapThemeCacheDao) {
 
     suspend fun getCachedThemes(): List<MapThemeModel>? {
         return withContext(Dispatchers.IO) {
-            try {
-                val cache = cacheDao.getCache()
-                if (cache != null) {
+            val cache = try {
+                cacheDao.getCache()
+            } catch (e: Exception) {
+                Log.e("HSD", "Failed to load cached themes from database", e)
+                com.andrei.dracones.domain.diagnostics.CrashReporter.recordException(e)
+                null
+            }
+            if (cache != null) {
+                try {
                     json.decodeFromString<List<MapThemeModel>>(cache.jsonPayload)
-                } else {
+                } catch (e: Exception) {
+                    Log.e("HSD", "Failed to deserialize cached themes JSON", e)
+                    com.andrei.dracones.domain.diagnostics.CrashReporter.recordException(e)
                     null
                 }
-            } catch (e: Exception) {
-                Log.e("HSD", "Failed to load cached themes", e)
+            } else {
                 null
             }
         }
@@ -63,36 +74,22 @@ class MapThemeRepository(private val cacheDao: MapThemeCacheDao) {
 
     suspend fun fetchThemesFromNetwork(): List<MapThemeModel> {
         return withContext(Dispatchers.IO) {
-            var connection: HttpURLConnection? = null
             try {
-                val url = URL("https://gist.githubusercontent.com/camomilesson/1221849a8add935f72f9c59d21e288dc/raw/ef7a742d845fd97cb8418636109f0d1b63094ba9/map-themes.json")
-                connection = url.openConnection() as HttpURLConnection
-                connection.connectTimeout = 5000
-                connection.readTimeout = 5000
-                connection.requestMethod = "GET"
+                val parsed = mapThemeApi.getMapThemes()
+                val payload = json.encodeToString(parsed)
                 
-                if (connection.responseCode == HttpURLConnection.HTTP_OK) {
-                    val payload = connection.inputStream.bufferedReader().use { it.readText() }
-                    // Validate JSON before saving
-                    val parsed = json.decodeFromString<List<MapThemeModel>>(payload)
-                    
-                    // Save to cache
-                    cacheDao.saveCache(
-                        MapThemeCacheEntity(
-                            jsonPayload = payload,
-                            lastUpdated = System.currentTimeMillis()
-                        )
+                // Save to cache
+                cacheDao.saveCache(
+                    MapThemeCacheEntity(
+                        jsonPayload = payload,
+                        lastUpdated = System.currentTimeMillis()
                     )
-                    Log.d("HSD", "Successfully downloaded and cached ${parsed.size} map themes")
-                    parsed
-                } else {
-                    throw Exception("HTTP error code: ${connection.responseCode}")
-                }
+                )
+                Log.d("HSD", "Successfully downloaded and cached ${parsed.size} map themes via Retrofit")
+                parsed
             } catch (e: Exception) {
-                Log.e("HSD", "Failed to fetch map themes from network", e)
+                Log.e("HSD", "Failed to fetch map themes from network via Retrofit", e)
                 throw e
-            } finally {
-                connection?.disconnect()
             }
         }
     }

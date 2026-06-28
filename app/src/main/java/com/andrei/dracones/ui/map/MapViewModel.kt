@@ -58,6 +58,10 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 val colorName = sharedPrefs.getString("fog_color_name", "Default") ?: "Default"
                 _uiState.update { it.copy(fogColorName = colorName) }
             }
+            "traveler_name" -> {
+                val name = sharedPrefs.getString("traveler_name", "") ?: ""
+                _uiState.update { it.copy(travelerName = name) }
+            }
         }
     }
 
@@ -80,6 +84,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         val showOtherPoi = sharedPrefs.getBoolean("show_other_poi", true)
         val mapTheme = sharedPrefs.getString("map_theme", "Default") ?: "Default"
         val fogColorName = sharedPrefs.getString("fog_color_name", "Default") ?: "Default"
+        val travelerName = sharedPrefs.getString("traveler_name", "") ?: ""
 
         _uiState.update { it.copy(
             fogOpacity = initialOpacity,
@@ -88,6 +93,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             showOtherPoi = showOtherPoi,
             mapTheme = mapTheme,
             fogColorName = fogColorName,
+            travelerName = travelerName,
         ) }
 
         val database = AppDatabase.getDatabase(application)
@@ -105,10 +111,20 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d(TAG, "No cached themes, using fallback themes.")
             }
             try {
+                com.andrei.dracones.domain.diagnostics.CrashReporter.log("Theme synchronization started")
                 val networkThemes = themeRepository.fetchThemesFromNetwork()
                 _uiState.update { it.copy(availableThemes = networkThemes, isThemesLoading = false) }
+                com.andrei.dracones.domain.diagnostics.CrashReporter.log("Theme synchronization succeeded")
             } catch (e: Exception) {
+                com.andrei.dracones.domain.diagnostics.CrashReporter.log("Theme synchronization failed: ${e.message}")
                 Log.e(TAG, "Network themes fetch failed, keeping existing themes", e)
+                
+                // Record non-fatal if it's an unexpected parsing/serialization or formatting failure
+                val isNetworkIssue = e is java.io.IOException || e is retrofit2.HttpException
+                if (!isNetworkIssue) {
+                    com.andrei.dracones.domain.diagnostics.CrashReporter.recordException(e)
+                }
+
                 _uiState.update { it.copy(
                     isThemesLoading = false,
                     themesErrorMessage = "Unable to sync latest themes. Operating in offline mode."
@@ -150,6 +166,8 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun startTracking() {
         if (_uiState.value.isTracking) return
 
+        com.andrei.dracones.domain.diagnostics.CrashReporter.log("Tracking started")
+
         _uiState.update { it.copy(
             isTracking = true, 
             isFollowingUser = true, 
@@ -168,6 +186,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun stopTracking() {
+        com.andrei.dracones.domain.diagnostics.CrashReporter.log("Tracking stopped")
         trackingJob?.cancel()
         trackingJob = null
         _uiState.update { it.copy(isTracking = false, isFollowingUser = false, isWaitingForLocation = false) }
@@ -270,6 +289,11 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun setFogColorName(colorName: String) {
         sharedPrefs.edit { putString("fog_color_name", colorName) }
         _uiState.update { it.copy(fogColorName = colorName) }
+    }
+
+    fun setTravelerName(name: String) {
+        sharedPrefs.edit { putString("traveler_name", name) }
+        _uiState.update { it.copy(travelerName = name) }
     }
 
     fun setFocusedRegion(parentH3Index: String?, resolution: Int?) {

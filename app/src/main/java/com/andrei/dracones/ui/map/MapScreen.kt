@@ -290,8 +290,13 @@ fun MapScreen(
                 ),
                 color = Color.White
             )
+            val greeting = if (uiState.travelerName.isBlank()) {
+                "Hello, traveler! Ready to explore?"
+            } else {
+                "Hello, ${uiState.travelerName}! Ready to explore?"
+            }
             Text(
-                text = "Uncover the world around you.",
+                text = greeting,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     shadow = Shadow(
                         color = Color.Black.copy(alpha = 0.5f),

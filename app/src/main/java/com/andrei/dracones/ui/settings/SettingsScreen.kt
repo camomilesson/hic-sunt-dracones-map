@@ -22,6 +22,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -90,6 +91,18 @@ fun SettingsScreen(
             
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Traveler Name Section
+            OutlinedTextField(
+                value = uiState.travelerName,
+                onValueChange = { viewModel.setTravelerName(it) },
+                label = { Text("Traveler name") },
+                placeholder = { Text("Enter your name") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             // Fog Settings Section
             Column(
                 modifier = Modifier
@@ -147,7 +160,7 @@ fun SettingsScreen(
                         val isSelected = uiState.mapTheme.equals(themeName, ignoreCase = true)
                         
                         // Map Style buttons with custom colors matching the dominant colors
-                        val buttonLabel = if (themeName.equals("Default", ignoreCase = true)) "Blue" else themeName
+                        val buttonLabel = if (themeName.equals("Default", ignoreCase = true)) "Default" else themeName
                         val dominantColor = when (themeName.lowercase()) {
                             "parchment" -> Color(0xFFC0C9B2) // Muted sage/olive
                             "night" -> Color(0xFF242F3E)      // Deep dark navy
@@ -270,6 +283,20 @@ fun SettingsScreen(
             ) {
                 Text("Clear Exploration Data")
             }
+
+            if (com.andrei.dracones.BuildConfig.DEBUG) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { com.andrei.dracones.domain.diagnostics.CrashReporter.forceCrash() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                ) {
+                    Text("Trigger Test Crash (Debug Only)")
+                }
+            }
         }
     }
 }
@@ -290,7 +317,7 @@ fun ThemeOptionButton(
             Color.White
         }
     } else {
-        color
+        MaterialTheme.colorScheme.onSurface
     }
 
     val backgroundColor = if (selected) color else Color.Transparent

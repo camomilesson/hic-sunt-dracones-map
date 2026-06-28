@@ -12,36 +12,56 @@ object H3Manager {
     const val DISTRICT_PARENT_RESOLUTION = 8
 
     fun latLngToCell(latLng: LatLng): String {
-        return h3.latLngToCellAddress(latLng.latitude, latLng.longitude, EXPLORATION_RESOLUTION)
+        return try {
+            h3.latLngToCellAddress(latLng.latitude, latLng.longitude, EXPLORATION_RESOLUTION)
+        } catch (e: Throwable) {
+            com.andrei.dracones.domain.diagnostics.CrashReporter.recordException(e)
+            throw e
+        }
     }
 
     fun cellToBoundary(h3Index: String): List<LatLng> {
-        val boundary = h3.cellToBoundary(h3Index)
-        return boundary.map { LatLng(it.lat, it.lng) }
+        return try {
+            val boundary = h3.cellToBoundary(h3Index)
+            boundary.map { LatLng(it.lat, it.lng) }
+        } catch (e: Throwable) {
+            com.andrei.dracones.domain.diagnostics.CrashReporter.recordException(e)
+            throw e
+        }
     }
 
     fun getParent(h3Index: String, parentResolution: Int): String {
-        return h3.cellToParentAddress(h3Index, parentResolution)
+        return try {
+            h3.cellToParentAddress(h3Index, parentResolution)
+        } catch (e: Throwable) {
+            com.andrei.dracones.domain.diagnostics.CrashReporter.recordException(e)
+            throw e
+        }
     }
 
     fun cellsToMergedRegions(h3Indices: Collection<String>): MergedExplorationRegions {
         if (h3Indices.isEmpty()) return MergedExplorationRegions(emptyList(), emptyList())
-        val h3MultiPolygon = h3.cellAddressesToMultiPolygon(h3Indices, false)
-        val exploredOutlines = mutableListOf<List<LatLng>>()
-        val unexploredPockets = mutableListOf<List<LatLng>>()
+        return try {
+            val h3MultiPolygon = h3.cellAddressesToMultiPolygon(h3Indices, false)
+            val exploredOutlines = mutableListOf<List<LatLng>>()
+            val unexploredPockets = mutableListOf<List<LatLng>>()
 
-        for (loops in h3MultiPolygon) {
-            val outerLoop = loops.firstOrNull() ?: continue
-            exploredOutlines.add(outerLoop.map { LatLng(it.lat, it.lng) })
-            
-            if (loops.size > 1) {
-                for (i in 1 until loops.size) {
-                    val innerLoop = loops[i]
-                    unexploredPockets.add(innerLoop.map { LatLng(it.lat, it.lng) })
+            for (loops in h3MultiPolygon) {
+                val outerLoop = loops.firstOrNull() ?: continue
+                exploredOutlines.add(outerLoop.map { LatLng(it.lat, it.lng) })
+                
+                if (loops.size > 1) {
+                    for (i in 1 until loops.size) {
+                        val innerLoop = loops[i]
+                        unexploredPockets.add(innerLoop.map { LatLng(it.lat, it.lng) })
+                    }
                 }
             }
+            MergedExplorationRegions(exploredOutlines, unexploredPockets)
+        } catch (e: Throwable) {
+            com.andrei.dracones.domain.diagnostics.CrashReporter.recordException(e)
+            throw e
         }
-        return MergedExplorationRegions(exploredOutlines, unexploredPockets)
     }
 }
 
