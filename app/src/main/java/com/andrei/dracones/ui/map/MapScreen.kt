@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -312,15 +313,19 @@ fun MapScreen(
                 .padding(bottom = 16.dp, end = 16.dp),
             horizontalAlignment = Alignment.End
         ) {
-            FloatingActionButton(
-                onClick = { viewModel.setFollowing(!uiState.isFollowingUser) },
-                containerColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                contentColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-            ) {
-                Icon(Icons.Default.MyLocation, contentDescription = "Follow")
+            AnimatedVisibility(visible = uiState.isTracking) {
+                Column(horizontalAlignment = Alignment.End) {
+                    FloatingActionButton(
+                        onClick = { viewModel.setFollowing(!uiState.isFollowingUser) },
+                        containerColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                        contentColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                    ) {
+                        Icon(Icons.Default.MyLocation, contentDescription = "Follow")
+                    }
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
             }
-            
-            Spacer(modifier = Modifier.height(12.dp))
             
             ExtendedFloatingActionButton(
                 text = { Text("Track") },
