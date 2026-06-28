@@ -48,7 +48,6 @@ import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.MapProperties
 
 private const val MIN_ZOOM_FOR_FOG = 1f
-private val FOG_BASE_COLOR = Color(0xFFE0D2B8)
 
 private fun buildMapStyleJson(
     showBusinesses: Boolean,
@@ -207,10 +206,17 @@ fun MapScreen(
                             }
                         }
 
+                    // Dynamic fog base color tied directly to map theme to ensure maximum contrast & harmony
+                    val fogColor = if (uiState.mapTheme == "Parchment") {
+                        Color(0xFFC5D1D6) // Silvery/foggy mist that contrasts with warm beige land
+                    } else {
+                        Color(0xFFE0D2B8) // Warm parchment beige that contrasts with default blue/green map
+                    }
+
                     Polygon(
                         points = outerPolygonPoints,
                         holes = holes,
-                        fillColor = FOG_BASE_COLOR.copy(alpha = uiState.fogOpacity),
+                        fillColor = fogColor.copy(alpha = uiState.fogOpacity),
                         strokeColor = Color.Transparent,
                         strokeWidth = 0f
                     )
@@ -219,7 +225,7 @@ fun MapScreen(
                     pockets.forEach { pocket ->
                         Polygon(
                             points = pocket,
-                            fillColor = FOG_BASE_COLOR.copy(alpha = uiState.fogOpacity),
+                            fillColor = fogColor.copy(alpha = uiState.fogOpacity),
                             strokeColor = Color.Transparent,
                             strokeWidth = 0f
                         )
