@@ -62,7 +62,7 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
             .onEach { entities ->
                 Log.d(TAG, "Loading ${entities.size} visited cells")
                 val h3Indices = entities.map { it.h3Index }
-                val mergedOutlines = H3Manager.cellsToMultiPolygonOutlines(h3Indices)
+                val mergedRegions = H3Manager.cellsToMergedRegions(h3Indices)
 
                 val uiModels = synchronized(boundaryCache) {
                     entities.map { entity ->
@@ -77,7 +77,8 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 _uiState.update { it.copy(
                     visitedCells = uiModels,
-                    visitedRegionOutlines = mergedOutlines
+                    visitedRegionOutlines = mergedRegions.exploredOutlines,
+                    unexploredPockets = mergedRegions.unexploredPockets
                 ) }
             }
             .flowOn(Dispatchers.Default)

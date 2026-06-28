@@ -135,6 +135,15 @@ fun MapScreen(
                             }
                         }
 
+                    // Filter pockets to unvisited islands within or near the visible map bounds
+                    val pockets = uiState.unexploredPockets
+                        .filter { pocket ->
+                            pocket.any { point ->
+                                point.latitude in south..north &&
+                                point.longitude in west..east
+                            }
+                        }
+
                     Polygon(
                         points = outerPolygonPoints,
                         holes = holes,
@@ -142,6 +151,16 @@ fun MapScreen(
                         strokeColor = Color.Transparent,
                         strokeWidth = 0f
                     )
+
+                    // Cover unexplored pocket islands back up with solid fog
+                    pockets.forEach { pocket ->
+                        Polygon(
+                            points = pocket,
+                            fillColor = FOG_BASE_COLOR.copy(alpha = uiState.fogOpacity),
+                            strokeColor = Color.Transparent,
+                            strokeWidth = 0f
+                        )
+                    }
                 }
             }
 

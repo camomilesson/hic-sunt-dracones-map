@@ -24,12 +24,28 @@ object H3Manager {
         return h3.cellToParentAddress(h3Index, parentResolution)
     }
 
-    fun cellsToMultiPolygonOutlines(h3Indices: Collection<String>): List<List<LatLng>> {
-        if (h3Indices.isEmpty()) return emptyList()
+    fun cellsToMergedRegions(h3Indices: Collection<String>): MergedExplorationRegions {
+        if (h3Indices.isEmpty()) return MergedExplorationRegions(emptyList(), emptyList())
         val h3MultiPolygon = h3.cellAddressesToMultiPolygon(h3Indices, false)
-        return h3MultiPolygon.map { loops ->
-            val outerLoop = loops.firstOrNull() ?: emptyList()
-            outerLoop.map { LatLng(it.lat, it.lng) }
+        val exploredOutlines = mutableListOf<List<LatLng>>()
+        val unexploredPockets = mutableListOf<List<LatLng>>()
+
+        for (loops in h3MultiPolygon) {
+            val outerLoop = loops.firstOrNull() ?: continue
+            exploredOutlines.add(outerLoop.map { LatLng(it.lat, it.lng) })
+            
+            if (loops.size > 1) {
+                for (i in 1 until loops.size) {
+                    val innerLoop = loops[i]
+                    unexploredPockets.add(innerLoop.map { LatLng(it.lat, it.lng) })
+                }
+            }
         }
+        return MergedExplorationRegions(exploredOutlines, unexploredPockets)
     }
 }
+
+data class MergedExplorationRegions(
+    val exploredOutlines: List<List<LatLng>>,
+    val unexploredPockets: List<List<LatLng>>
+)

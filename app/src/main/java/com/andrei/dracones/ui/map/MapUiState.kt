@@ -11,6 +11,7 @@ data class MapUiState(
     val initialCameraPosition: CameraPositionState = CameraPositionState(),
     val visitedCells: List<VisitedCellUiModel> = emptyList(),
     val visitedRegionOutlines: List<List<LatLng>> = emptyList(),
+    val unexploredPockets: List<List<LatLng>> = emptyList(),
     val isTracking: Boolean = false,
     val isFollowingUser: Boolean = false,
     val isWaitingForLocation: Boolean = false,
