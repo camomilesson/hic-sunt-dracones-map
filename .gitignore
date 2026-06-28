@@ -7,13 +7,21 @@
 /captures
 .externalNativeBuild
 .cxx
+.idea/deploymentTargetSelector.xml
+
 # Package Files #
 *.jar
 *.aar
 
-# jniLibs should be tracked if manually added, but usually we ignore generated ones.
-# In this case, we WANT to track the professor's libh3-java.so
+# jniLibs should be tracked if manually added
 !app/src/main/jniLibs/**
 
 # Firebase Configuration
 google-services.json
+
+# Signing keys
+*.jks
+*.keystore
+
+# Release artifacts
+app/release/
