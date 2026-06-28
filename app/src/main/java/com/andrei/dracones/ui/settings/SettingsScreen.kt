@@ -2,12 +2,17 @@ package com.andrei.dracones.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Switch
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -65,7 +70,8 @@ fun SettingsScreen(
             modifier = Modifier
                 .padding(innerPadding)
                 .padding(16.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Top
         ) {
@@ -78,12 +84,13 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
             
-            Spacer(modifier = Modifier.height(48.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
+            // Fog Settings Section
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 16.dp),
+                    .padding(vertical = 12.dp),
                 horizontalAlignment = Alignment.Start
             ) {
                 Text(
@@ -100,6 +107,103 @@ fun SettingsScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Map Style Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "Map Style",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("Default", "Parchment").forEach { themeName ->
+                        val isSelected = uiState.mapTheme == themeName
+                        if (isSelected) {
+                            Button(
+                                onClick = { viewModel.setMapTheme(themeName) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(themeName)
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { viewModel.setMapTheme(themeName) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(themeName)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Map Elements Visibility Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "Map Elements Visibility",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Show Businesses", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = uiState.showBusinesses,
+                        onCheckedChange = { viewModel.setShowBusinesses(it) }
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Show Transit", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = uiState.showTransit,
+                        onCheckedChange = { viewModel.setShowTransit(it) }
+                    )
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(text = "Show Attractions & POIs", style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = uiState.showOtherPoi,
+                        onCheckedChange = { viewModel.setShowOtherPoi(it) }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
 
             Button(
                 onClick = { showDialog = true },

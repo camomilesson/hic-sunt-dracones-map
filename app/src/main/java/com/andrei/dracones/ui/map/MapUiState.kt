@@ -19,7 +19,11 @@ data class MapUiState(
     val permissionMessage: String? = null,
     val lastKnownLocation: LatLng? = null,
     val lastVisitedH3Index: String? = null,
-    val fogOpacity: Float = 0.80f
+    val fogOpacity: Float = 0.80f,
+    val showBusinesses: Boolean = true,
+    val showTransit: Boolean = true,
+    val showOtherPoi: Boolean = true,
+    val mapTheme: String = "Default"
 )
 
 data class CameraPositionState(

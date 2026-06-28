@@ -32,10 +32,27 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val sharedPrefs: SharedPreferences = application.getSharedPreferences("dracones_settings", Context.MODE_PRIVATE)
 
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == "fog_opacity") {
-            val opacity = sharedPrefs.getFloat("fog_opacity", 0.80f)
-            _uiState.update { it.copy(fogOpacity = opacity) }
-            Log.d(TAG, "Fog opacity updated from shared preferences change: $opacity")
+        when (key) {
+            "fog_opacity" -> {
+                val opacity = sharedPrefs.getFloat("fog_opacity", 0.80f)
+                _uiState.update { it.copy(fogOpacity = opacity) }
+            }
+            "show_businesses" -> {
+                val show = sharedPrefs.getBoolean("show_businesses", true)
+                _uiState.update { it.copy(showBusinesses = show) }
+            }
+            "show_transit" -> {
+                val show = sharedPrefs.getBoolean("show_transit", true)
+                _uiState.update { it.copy(showTransit = show) }
+            }
+            "show_other_poi" -> {
+                val show = sharedPrefs.getBoolean("show_other_poi", true)
+                _uiState.update { it.copy(showOtherPoi = show) }
+            }
+            "map_theme" -> {
+                val theme = sharedPrefs.getString("map_theme", "Default") ?: "Default"
+                _uiState.update { it.copy(mapTheme = theme) }
+            }
         }
     }
 
@@ -53,7 +70,18 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     init {
         sharedPrefs.registerOnSharedPreferenceChangeListener(prefsListener)
         val initialOpacity = sharedPrefs.getFloat("fog_opacity", 0.80f)
-        _uiState.update { it.copy(fogOpacity = initialOpacity) }
+        val showBusinesses = sharedPrefs.getBoolean("show_businesses", true)
+        val showTransit = sharedPrefs.getBoolean("show_transit", true)
+        val showOtherPoi = sharedPrefs.getBoolean("show_other_poi", true)
+        val mapTheme = sharedPrefs.getString("map_theme", "Default") ?: "Default"
+
+        _uiState.update { it.copy(
+            fogOpacity = initialOpacity,
+            showBusinesses = showBusinesses,
+            showTransit = showTransit,
+            showOtherPoi = showOtherPoi,
+            mapTheme = mapTheme
+        ) }
 
         val database = AppDatabase.getDatabase(application)
         repository = ExplorationRepository(database.visitedCellDao())
@@ -186,6 +214,26 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun setFogOpacity(opacity: Float) {
         sharedPrefs.edit { putFloat("fog_opacity", opacity) }
         _uiState.update { it.copy(fogOpacity = opacity) }
+    }
+
+    fun setShowBusinesses(show: Boolean) {
+        sharedPrefs.edit { putBoolean("show_businesses", show) }
+        _uiState.update { it.copy(showBusinesses = show) }
+    }
+
+    fun setShowTransit(show: Boolean) {
+        sharedPrefs.edit { putBoolean("show_transit", show) }
+        _uiState.update { it.copy(showTransit = show) }
+    }
+
+    fun setShowOtherPoi(show: Boolean) {
+        sharedPrefs.edit { putBoolean("show_other_poi", show) }
+        _uiState.update { it.copy(showOtherPoi = show) }
+    }
+
+    fun setMapTheme(theme: String) {
+        sharedPrefs.edit { putString("map_theme", theme) }
+        _uiState.update { it.copy(mapTheme = theme) }
     }
 
     override fun onCleared() {

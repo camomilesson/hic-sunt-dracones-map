@@ -44,9 +44,56 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.android.gms.maps.model.MapStyleOptions
+import com.google.maps.android.compose.MapProperties
 
-private const val MIN_ZOOM_FOR_FOG = 15f
+private const val MIN_ZOOM_FOR_FOG = 1f
 private val FOG_BASE_COLOR = Color(0xFFE0D2B8)
+
+private fun buildMapStyleJson(
+    showBusinesses: Boolean,
+    showTransit: Boolean,
+    showOtherPoi: Boolean,
+    theme: String
+): String {
+    val styleElements = mutableListOf<String>()
+
+    // 1. Theme base styling
+    if (theme == "Parchment") {
+        styleElements.addAll(listOf(
+            """{"elementType": "geometry", "stylers": [{"color": "#f5f1e6"}]}""",
+            """{"elementType": "labels.text.fill", "stylers": [{"color": "#5c5344"}]}""",
+            """{"elementType": "labels.text.stroke", "stylers": [{"color": "#f5f1e6"}]}""",
+            """{"featureType": "administrative", "elementType": "geometry.stroke", "stylers": [{"color": "#c9b2a6"}]}""",
+            """{"featureType": "landscape.natural", "elementType": "geometry", "stylers": [{"color": "#dfd2be"}]}""",
+            """{"featureType": "poi", "elementType": "geometry", "stylers": [{"color": "#dfd2be"}]}""",
+            """{"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#fdfcf8"}]}""",
+            """{"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#f8c967"}]}""",
+            """{"featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{"color": "#e9bc62"}]}""",
+            """{"featureType": "water", "elementType": "geometry.fill", "stylers": [{"color": "#b9d3c2"}]}"""
+        ))
+    }
+
+    // 2. Feature visibility overlays
+    if (!showBusinesses) {
+        styleElements.add("""{"featureType": "poi.business", "elementType": "all", "stylers": [{"visibility": "off"}]}""")
+    }
+    if (!showTransit) {
+        styleElements.add("""{"featureType": "transit", "elementType": "all", "stylers": [{"visibility": "off"}]}""")
+    }
+    if (!showOtherPoi) {
+        styleElements.addAll(listOf(
+            """{"featureType": "poi.attraction", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
+            """{"featureType": "poi.government", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
+            """{"featureType": "poi.medical", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
+            """{"featureType": "poi.school", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
+            """{"featureType": "poi.sports_complex", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
+            """{"featureType": "poi.place_of_worship", "elementType": "all", "stylers": [{"visibility": "off"}]}"""
+        ))
+    }
+
+    return styleElements.joinToString(separator = ",", prefix = "[", postfix = "]")
+}
 
 @Composable
 fun MapScreen(
@@ -55,6 +102,21 @@ fun MapScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val mapStyleJson = remember(uiState.showBusinesses, uiState.showTransit, uiState.showOtherPoi, uiState.mapTheme) {
+        buildMapStyleJson(
+            showBusinesses = uiState.showBusinesses,
+            showTransit = uiState.showTransit,
+            showOtherPoi = uiState.showOtherPoi,
+            theme = uiState.mapTheme
+        )
+    }
+
+    val mapProperties = remember(mapStyleJson) {
+        MapProperties(
+            mapStyleOptions = if (mapStyleJson == "[]") null else MapStyleOptions(mapStyleJson)
+        )
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -97,6 +159,7 @@ fun MapScreen(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
+            properties = mapProperties,
             uiSettings = remember { MapUiSettings(zoomControlsEnabled = false) },
             onMapClick = { latLng -> viewModel.markCellVisited(latLng) }
         ) {
