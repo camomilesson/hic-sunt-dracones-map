@@ -1,6 +1,8 @@
 package com.andrei.dracones.ui.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,24 +13,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Switch
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Slider
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.andrei.dracones.ui.map.MapViewModel
 
@@ -36,7 +41,7 @@ import com.andrei.dracones.ui.map.MapViewModel
 fun SettingsScreen(
     modifier: Modifier = Modifier,
     // Reusing MapViewModel for simplicity as it already has access to repository and handles caches
-    viewModel: MapViewModel = viewModel()
+    viewModel: MapViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDialog by remember { mutableStateOf(false) }
@@ -52,7 +57,7 @@ fun SettingsScreen(
                         viewModel.clearVisitedCells()
                         showDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
                 ) {
                     Text("Clear")
                 }
@@ -61,7 +66,7 @@ fun SettingsScreen(
                 TextButton(onClick = { showDialog = false }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 
@@ -73,15 +78,15 @@ fun SettingsScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
         ) {
             Text(
                 text = "Hic Sunt Dracones",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
             )
             Text(
                 text = "Uncover the world around you.",
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -91,19 +96,75 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = Alignment.Start,
             ) {
                 Text(
                     text = "Fog Opacity: ${(uiState.fogOpacity * 100).toInt()}%",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Slider(
                     value = uiState.fogOpacity,
                     onValueChange = { viewModel.setFogOpacity(it) },
                     valueRange = 0.5f..1.0f,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Map Style Section (Moved above Fog Color Section)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                Text(
+                    text = "Map Style",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    // Sorting and displaying themes dynamically (Default, Parchment, Night)
+                    val baseThemes = uiState.availableThemes
+                    val themeOrder = listOf("default", "parchment", "night")
+                    val sortedThemes = baseThemes.sortedBy { theme ->
+                        val index = themeOrder.indexOf(theme.id.lowercase())
+                        if (index != -1) index else Int.MAX_VALUE
+                    }
+                    val displayThemes = sortedThemes.ifEmpty {
+                        listOf(
+                            com.andrei.dracones.data.model.MapThemeModel("default", "Default", "Standard", emptyList()),
+                            com.andrei.dracones.data.model.MapThemeModel("parchment", "Parchment", "Warm", emptyList())
+                        )
+                    }
+
+                    displayThemes.forEach { theme ->
+                        val themeName = theme.name
+                        val isSelected = uiState.mapTheme.equals(themeName, ignoreCase = true)
+                        
+                        // Map Style buttons with custom colors matching the dominant colors
+                        val buttonLabel = if (themeName.equals("Default", ignoreCase = true)) "Blue" else themeName
+                        val dominantColor = when (themeName.lowercase()) {
+                            "parchment" -> Color(0xFFC0C9B2) // Muted sage/olive
+                            "night" -> Color(0xFF242F3E)      // Deep dark navy
+                            else -> Color(0xFF1A73E8)         // Classic map blue
+                        }
+
+                        ThemeOptionButton(
+                            label = themeName,
+                            displayName = buttonLabel,
+                            selected = isSelected,
+                            color = dominantColor,
+                            onClick = { viewModel.setMapTheme(themeName) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -113,72 +174,32 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = Alignment.Start,
             ) {
                 Text(
                     text = "Fog Color",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     listOf("Parchment", "Silvery", "Blue").forEach { colorName ->
                         val isSelected = uiState.fogColorName == colorName
                         if (isSelected) {
                             Button(
                                 onClick = { viewModel.setFogColorName(colorName) },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             ) {
                                 Text(colorName)
                             }
                         } else {
                             OutlinedButton(
                                 onClick = { viewModel.setFogColorName(colorName) },
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             ) {
                                 Text(colorName)
-                            }
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Map Style Section
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 12.dp),
-                horizontalAlignment = Alignment.Start
-            ) {
-                Text(
-                    text = "Map Style",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    val themeNames = uiState.availableThemes.map { it.name }.ifEmpty { listOf("Default", "Parchment") }
-                    themeNames.forEach { themeName ->
-                        val isSelected = uiState.mapTheme.equals(themeName, ignoreCase = true)
-                        if (isSelected) {
-                            Button(
-                                onClick = { viewModel.setMapTheme(themeName) },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(themeName)
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { viewModel.setMapTheme(themeName) },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text(themeName)
                             }
                         }
                     }
@@ -192,11 +213,11 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 12.dp),
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = Alignment.Start,
             ) {
                 Text(
                     text = "Map Elements Visibility",
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
@@ -205,12 +226,12 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(text = "Show Businesses", style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = uiState.showBusinesses,
-                        onCheckedChange = { viewModel.setShowBusinesses(it) }
+                        onCheckedChange = { viewModel.setShowBusinesses(it) },
                     )
                 }
 
@@ -219,12 +240,12 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(text = "Show Transit", style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = uiState.showTransit,
-                        onCheckedChange = { viewModel.setShowTransit(it) }
+                        onCheckedChange = { viewModel.setShowTransit(it) },
                     )
                 }
 
@@ -233,12 +254,12 @@ fun SettingsScreen(
                         .fillMaxWidth()
                         .padding(vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(text = "Show Attractions & POIs", style = MaterialTheme.typography.bodyLarge)
                     Switch(
                         checked = uiState.showOtherPoi,
-                        onCheckedChange = { viewModel.setShowOtherPoi(it) }
+                        onCheckedChange = { viewModel.setShowOtherPoi(it) },
                     )
                 }
             }
@@ -248,10 +269,50 @@ fun SettingsScreen(
             Button(
                 onClick = { showDialog = true },
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
             ) {
                 Text("Clear Exploration Data")
             }
+        }
+    }
+}
+
+@Composable
+fun ThemeOptionButton(
+    label: String,
+    displayName: String,
+    selected: Boolean,
+    color: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val contentColor = if (selected) {
+        // High contrast text over filled background
+        if (color == Color(0xFFC0C9B2)) Color(0xFF2C3524) else Color.White
+    } else {
+        color
+    }
+
+    val backgroundColor = if (selected) color else Color.Transparent
+    val borderStroke = if (selected) null else BorderStroke(2.dp, color)
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(40.dp),
+        shape = MaterialTheme.shapes.medium,
+        color = backgroundColor,
+        contentColor = contentColor,
+        border = borderStroke,
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = displayName,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
