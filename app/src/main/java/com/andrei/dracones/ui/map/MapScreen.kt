@@ -91,6 +91,10 @@ private fun buildMapStyleJson(
         ))
     }
 
+    // 3. Global style overrides (everywhere)
+    // Hides road icons and driving direction arrows (one-way arrows)
+    styleElements.add("""{"featureType": "road", "elementType": "labels.icon", "stylers": [{"visibility": "off"}]}""")
+
     return styleElements.joinToString(separator = ",", prefix = "[", postfix = "]")
 }
 
