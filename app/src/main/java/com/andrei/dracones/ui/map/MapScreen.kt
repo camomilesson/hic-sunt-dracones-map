@@ -65,12 +65,13 @@ private fun buildMapStyleJson(
             """{"elementType": "labels.text.fill", "stylers": [{"color": "#5c5344"}]}""",
             """{"elementType": "labels.text.stroke", "stylers": [{"color": "#f5f1e6"}]}""",
             """{"featureType": "administrative", "elementType": "geometry.stroke", "stylers": [{"color": "#c9b2a6"}]}""",
-            """{"featureType": "landscape.natural", "elementType": "geometry", "stylers": [{"color": "#dfd2be"}]}""",
+            """{"featureType": "landscape.natural", "elementType": "geometry", "stylers": [{"color": "#c0c9b2"}]}""",
             """{"featureType": "poi", "elementType": "geometry", "stylers": [{"color": "#dfd2be"}]}""",
+            """{"featureType": "poi.park", "elementType": "geometry", "stylers": [{"color": "#c0c9b2"}]}""",
             """{"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#fdfcf8"}]}""",
             """{"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#f8c967"}]}""",
             """{"featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{"color": "#e9bc62"}]}""",
-            """{"featureType": "water", "elementType": "geometry.fill", "stylers": [{"color": "#b9d3c2"}]}"""
+            """{"featureType": "water", "elementType": "geometry.fill", "stylers": [{"color": "#bacad6"}]}"""
         ))
     }
 
