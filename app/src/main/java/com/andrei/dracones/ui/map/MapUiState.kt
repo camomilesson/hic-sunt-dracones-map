@@ -24,7 +24,7 @@ data class MapUiState(
     val showTransit: Boolean = true,
     val showOtherPoi: Boolean = true,
     val mapTheme: String = "Default",
-    val fogColorName: String = "Parchment",
+    val fogColorName: String = "Default",
     val focusedRegion: FocusedRegionUiModel? = null,
     val availableThemes: List<com.andrei.dracones.data.model.MapThemeModel> = emptyList(),
     val isThemesLoading: Boolean = false,

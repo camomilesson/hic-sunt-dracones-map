@@ -204,9 +204,9 @@ fun MapScreen(
 
                     // Load chosen fog color dynamically from state
                     val fogColor = when (uiState.fogColorName) {
-                        "Silvery" -> Color(0xFFC5D1D6) // Silvery/foggy mist
-                        "Blue" -> Color(0xFF2E3A52)    // Subdued, dusky slate navy
-                        else -> Color(0xFFE0D2B8)      // Warm parchment beige
+                        "Silver" -> Color(0xFFC5D1D6)    // Silvery/foggy mist
+                        "Parchment" -> Color(0xFFE0D2B8) // Warm parchment beige
+                        else -> Color(0xFF2E3A52)        // Default subdued blue fog
                     }
 
                     Polygon(

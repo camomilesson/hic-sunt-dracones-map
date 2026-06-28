@@ -20,7 +20,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Switch
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -152,11 +151,10 @@ fun SettingsScreen(
                         val dominantColor = when (themeName.lowercase()) {
                             "parchment" -> Color(0xFFC0C9B2) // Muted sage/olive
                             "night" -> Color(0xFF242F3E)      // Deep dark navy
-                            else -> Color(0xFF1A73E8)         // Classic map blue
+                            else -> Color(0xFF2E3A52)         // Subdued blue (matching default blue fog)
                         }
 
                         ThemeOptionButton(
-                            label = themeName,
                             displayName = buttonLabel,
                             selected = isSelected,
                             color = dominantColor,
@@ -185,23 +183,22 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    listOf("Parchment", "Silvery", "Blue").forEach { colorName ->
+                    // Display fog colors in order: Default, Parchment, Silver
+                    val fogColors = listOf(
+                        "Default" to Color(0xFF2E3A52),      // Subdued blue
+                        "Parchment" to Color(0xFFE0D2B8),    // Warm parchment beige
+                        "Silver" to Color(0xFFC5D1D6)        // Silvery mist
+                    )
+
+                    fogColors.forEach { (colorName, colorVal) ->
                         val isSelected = uiState.fogColorName == colorName
-                        if (isSelected) {
-                            Button(
-                                onClick = { viewModel.setFogColorName(colorName) },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text(colorName)
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { viewModel.setFogColorName(colorName) },
-                                modifier = Modifier.weight(1f),
-                            ) {
-                                Text(colorName)
-                            }
-                        }
+                        ThemeOptionButton(
+                            displayName = colorName,
+                            selected = isSelected,
+                            color = colorVal,
+                            onClick = { viewModel.setFogColorName(colorName) },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
@@ -279,7 +276,6 @@ fun SettingsScreen(
 
 @Composable
 fun ThemeOptionButton(
-    label: String,
     displayName: String,
     selected: Boolean,
     color: Color,
@@ -288,7 +284,11 @@ fun ThemeOptionButton(
 ) {
     val contentColor = if (selected) {
         // High contrast text over filled background
-        if (color == Color(0xFFC0C9B2)) Color(0xFF2C3524) else Color.White
+        if (color == Color(0xFFC0C9B2) || color == Color(0xFFE0D2B8) || color == Color(0xFFC5D1D6)) {
+            Color(0xFF2C3524) // Dark text for lighter pastel colors
+        } else {
+            Color.White
+        }
     } else {
         color
     }
