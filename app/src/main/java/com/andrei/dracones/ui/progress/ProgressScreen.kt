@@ -1,6 +1,5 @@
 package com.andrei.dracones.ui.progress
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,9 +8,15 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -29,7 +34,7 @@ import java.util.Locale
 fun ProgressScreen(
     modifier: Modifier = Modifier,
     viewModel: ProgressViewModel = viewModel(),
-    onNavigateToMap: ((parentH3Index: String, parentResolution: Int) -> Unit)? = null
+    onNavigateToMap: ((parentH3Index: String, parentResolution: Int) -> Unit)? = null,
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
@@ -41,14 +46,14 @@ fun ProgressScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.Start,
-            verticalArrangement = Arrangement.Top
+            verticalArrangement = Arrangement.Top,
         ) {
             Text(
                 text = "Discovery Statistics",
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier
                     .padding(bottom = 24.dp)
-                    .align(Alignment.CenterHorizontally)
+                    .align(Alignment.CenterHorizontally),
             )
 
             // SECTION 1: Exploration Progress
@@ -91,12 +96,12 @@ fun ProgressScreen(
                 modifier = Modifier.padding(bottom = 8.dp)
             )
             
-            StatValueRow(label = "Total Cells Uncovered", value = "${uiState.totalCellsExplored}")
+            StatValueRow(label = "Total Cells Uncovered", value = uiState.totalCellsExplored.toString())
             StatValueRow(
                 label = "Total Area Uncovered", 
                 value = String.format(Locale.getDefault(), "~%.4f km²", uiState.totalAreaKm2)
             )
-            StatValueRow(label = "Movement Logs Collected", value = "${uiState.totalFootsteps}")
+            StatValueRow(label = "Movement Logs Collected", value = uiState.totalFootsteps.toString())
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
@@ -134,24 +139,63 @@ fun StatProgressRow(
     progress: Int,
     onClick: (() -> Unit)? = null
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-            .padding(vertical = 8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+    if (onClick != null) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            )
         ) {
-            Text(text = label, style = MaterialTheme.typography.bodyLarge)
-            Text(text = "$progress%", style = MaterialTheme.typography.bodyLarge)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(text = label, style = MaterialTheme.typography.titleMedium)
+                        Text(text = "$progress%", style = MaterialTheme.typography.bodyLarge)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LinearProgressIndicator(
+                        progress = { progress / 100f },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "Show on Map",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        LinearProgressIndicator(
-            progress = { progress / 100f },
-            modifier = Modifier.fillMaxWidth()
-        )
+    } else {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = label, style = MaterialTheme.typography.bodyLarge)
+                Text(text = "$progress%", style = MaterialTheme.typography.bodyLarge)
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+            LinearProgressIndicator(
+                progress = { progress / 100f },
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
     }
 }
 
