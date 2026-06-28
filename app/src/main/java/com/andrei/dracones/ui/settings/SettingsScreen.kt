@@ -163,8 +163,9 @@ fun SettingsScreen(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    listOf("Default", "Parchment").forEach { themeName ->
-                        val isSelected = uiState.mapTheme == themeName
+                    val themeNames = uiState.availableThemes.map { it.name }.ifEmpty { listOf("Default", "Parchment") }
+                    themeNames.forEach { themeName ->
+                        val isSelected = uiState.mapTheme.equals(themeName, ignoreCase = true)
                         if (isSelected) {
                             Button(
                                 onClick = { viewModel.setMapTheme(themeName) },

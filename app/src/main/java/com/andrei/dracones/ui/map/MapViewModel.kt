@@ -9,6 +9,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.andrei.dracones.data.persistence.AppDatabase
 import com.andrei.dracones.data.repository.ExplorationRepository
+import com.andrei.dracones.data.repository.MapThemeRepository
 import com.andrei.dracones.domain.h3.H3Manager
 import com.andrei.dracones.data.location.LocationTracker
 import com.google.android.gms.maps.model.LatLng
@@ -91,6 +92,29 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
 
         val database = AppDatabase.getDatabase(application)
         repository = ExplorationRepository(database.visitedCellDao())
+        val themeRepository = MapThemeRepository(database.mapThemeCacheDao())
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isThemesLoading = true, themesErrorMessage = null) }
+            val cached = themeRepository.getCachedThemes()
+            if (cached != null) {
+                _uiState.update { it.copy(availableThemes = cached) }
+                Log.d(TAG, "Loaded cached themes: ${cached.map { it.name }}")
+            } else {
+                _uiState.update { it.copy(availableThemes = themeRepository.fallbackThemes) }
+                Log.d(TAG, "No cached themes, using fallback themes.")
+            }
+            try {
+                val networkThemes = themeRepository.fetchThemesFromNetwork()
+                _uiState.update { it.copy(availableThemes = networkThemes, isThemesLoading = false) }
+            } catch (e: Exception) {
+                Log.e(TAG, "Network themes fetch failed, keeping existing themes", e)
+                _uiState.update { it.copy(
+                    isThemesLoading = false,
+                    themesErrorMessage = "Unable to sync latest themes. Operating in offline mode."
+                ) }
+            }
+        }
         
         repository.allVisitedCells
             .onEach { entities ->

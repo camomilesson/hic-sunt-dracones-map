@@ -52,58 +52,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.CircleShape
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.MapProperties
+import com.andrei.dracones.domain.theme.MapStyleBuilder
 
 private const val MIN_ZOOM_FOR_FOG = 1f
-
-private fun buildMapStyleJson(
-    showBusinesses: Boolean,
-    showTransit: Boolean,
-    showOtherPoi: Boolean,
-    theme: String
-): String {
-    val styleElements = mutableListOf<String>()
-
-    // 1. Theme base styling
-    if (theme == "Parchment") {
-        styleElements.addAll(listOf(
-            """{"elementType": "geometry", "stylers": [{"color": "#f5f1e6"}]}""",
-            """{"elementType": "labels.text.fill", "stylers": [{"color": "#5c5344"}]}""",
-            """{"elementType": "labels.text.stroke", "stylers": [{"color": "#f5f1e6"}]}""",
-            """{"featureType": "administrative", "elementType": "geometry.stroke", "stylers": [{"color": "#c9b2a6"}]}""",
-            """{"featureType": "landscape.natural", "elementType": "geometry", "stylers": [{"color": "#c0c9b2"}]}""",
-            """{"featureType": "poi", "elementType": "geometry", "stylers": [{"color": "#dfd2be"}]}""",
-            """{"featureType": "poi.park", "elementType": "geometry", "stylers": [{"color": "#c0c9b2"}]}""",
-            """{"featureType": "road", "elementType": "geometry", "stylers": [{"color": "#fdfcf8"}]}""",
-            """{"featureType": "road.highway", "elementType": "geometry", "stylers": [{"color": "#f8c967"}]}""",
-            """{"featureType": "road.highway", "elementType": "geometry.stroke", "stylers": [{"color": "#e9bc62"}]}""",
-            """{"featureType": "water", "elementType": "geometry.fill", "stylers": [{"color": "#bacad6"}]}"""
-        ))
-    }
-
-    // 2. Feature visibility overlays
-    if (!showBusinesses) {
-        styleElements.add("""{"featureType": "poi.business", "elementType": "all", "stylers": [{"visibility": "off"}]}""")
-    }
-    if (!showTransit) {
-        styleElements.add("""{"featureType": "transit", "elementType": "all", "stylers": [{"visibility": "off"}]}""")
-    }
-    if (!showOtherPoi) {
-        styleElements.addAll(listOf(
-            """{"featureType": "poi.attraction", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
-            """{"featureType": "poi.government", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
-            """{"featureType": "poi.medical", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
-            """{"featureType": "poi.school", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
-            """{"featureType": "poi.sports_complex", "elementType": "all", "stylers": [{"visibility": "off"}]}""",
-            """{"featureType": "poi.place_of_worship", "elementType": "all", "stylers": [{"visibility": "off"}]}"""
-        ))
-    }
-
-    // 3. Global style overrides (everywhere)
-    // Hides road icons and driving direction arrows (one-way arrows)
-    styleElements.add("""{"featureType": "road", "elementType": "labels.icon", "stylers": [{"visibility": "off"}]}""")
-
-    return styleElements.joinToString(separator = ",", prefix = "[", postfix = "]")
-}
 
 @Composable
 fun MapScreen(
@@ -122,12 +73,16 @@ fun MapScreen(
         }
     }
 
-    val mapStyleJson = remember(uiState.showBusinesses, uiState.showTransit, uiState.showOtherPoi, uiState.mapTheme) {
-        buildMapStyleJson(
+    val activeTheme = remember(uiState.availableThemes, uiState.mapTheme) {
+        uiState.availableThemes.find { it.name.equals(uiState.mapTheme, ignoreCase = true) }
+    }
+
+    val mapStyleJson = remember(uiState.showBusinesses, uiState.showTransit, uiState.showOtherPoi, activeTheme) {
+        MapStyleBuilder.buildStyleJson(
+            theme = activeTheme,
             showBusinesses = uiState.showBusinesses,
             showTransit = uiState.showTransit,
-            showOtherPoi = uiState.showOtherPoi,
-            theme = uiState.mapTheme
+            showOtherPoi = uiState.showOtherPoi
         )
     }
 
@@ -353,6 +308,34 @@ fun MapScreen(
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 8.dp)
                 )
+            }
+
+            uiState.themesErrorMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
+            if (uiState.isThemesLoading) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Refreshing map themes...",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White
+                    )
+                }
             }
 
             if (uiState.isWaitingForLocation) {
