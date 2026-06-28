@@ -23,4 +23,13 @@ object H3Manager {
     fun getParent(h3Index: String, parentResolution: Int): String {
         return h3.cellToParentAddress(h3Index, parentResolution)
     }
+
+    fun cellsToMultiPolygonOutlines(h3Indices: Collection<String>): List<List<LatLng>> {
+        if (h3Indices.isEmpty()) return emptyList()
+        val h3MultiPolygon = h3.cellAddressesToMultiPolygon(h3Indices, false)
+        return h3MultiPolygon.map { loops ->
+            val outerLoop = loops.firstOrNull() ?: emptyList()
+            outerLoop.map { LatLng(it.lat, it.lng) }
+        }
+    }
 }

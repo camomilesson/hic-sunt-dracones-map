@@ -126,15 +126,14 @@ fun MapScreen(
                         LatLng(south, east)
                     )
 
-                    // Filter holes to cells that are within or near the visible map bounds
-                    val holes = uiState.visitedCells
-                        .filter { cell ->
-                            cell.boundary.any { point ->
+                    // Filter holes to merged outlines that are within or near the visible map bounds
+                    val holes = uiState.visitedRegionOutlines
+                        .filter { outline ->
+                            outline.any { point ->
                                 point.latitude in south..north &&
                                 point.longitude in west..east
                             }
                         }
-                        .map { it.boundary }
 
                     Polygon(
                         points = outerPolygonPoints,
