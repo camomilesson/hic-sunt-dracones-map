@@ -176,7 +176,7 @@ class ExplorationTrackingService : Service() {
 
         return Notification.Builder(this, NOTIFICATION_CHANNEL_ID)
             .setContentTitle("Hic Sunt Dracones")
-            .setContentText("Exploration tracking active")
+            .setContentText("Background tracking active, you can close the app")
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setContentIntent(contentPendingIntent)
             .setOngoing(true)
