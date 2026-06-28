@@ -13,6 +13,9 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class ProgressViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: ExplorationRepository
@@ -26,7 +29,7 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
         repository.allVisitedCells
             .onEach { entities ->
                 if (entities.isEmpty()) {
-                    _uiState.update { ProgressUiState(0, 0, 0) }
+                    _uiState.update { ProgressUiState() }
                     return@onEach
                 }
 
@@ -42,18 +45,48 @@ class ProgressViewModel(application: Application) : AndroidViewModel(application
                 val visitedInDistrict = entities.count { it.districtParentH3 == districtParent }
 
                 // Calculate progress percentages
-                // Block Parent (Res 10) holds up to 7 Res 11 cells
                 val blockProgress = ((visitedInBlock.toFloat() / 7f) * 100).toInt().coerceAtMost(100)
-                // Neighborhood Parent (Res 9) holds up to 49 Res 11 cells
                 val neighborhoodProgress = ((visitedInNeighborhood.toFloat() / 49f) * 100).toInt().coerceAtMost(100)
-                // District Parent (Res 8) holds up to 343 Res 11 cells
                 val districtProgress = ((visitedInDistrict.toFloat() / 343f) * 100).toInt().coerceAtMost(100)
+
+                // Additional Advanced Stats
+                // 1. Total cells and estimated area (Res 11 cell is ~0.00249 km²)
+                val totalCells = entities.size
+                val totalArea = totalCells * 0.00249
+
+                // 2. Discoveries over time (Today, Week, Month rolling timeframes)
+                val now = System.currentTimeMillis()
+                val oneDayMs = 24 * 60 * 60 * 1000L
+                val sevenDaysMs = 7 * oneDayMs
+                val thirtyDaysMs = 30 * oneDayMs
+
+                val todayCount = entities.count { it.firstVisitedAt >= now - oneDayMs }
+                val weekCount = entities.count { it.firstVisitedAt >= now - sevenDaysMs }
+                val monthCount = entities.count { it.firstVisitedAt >= now - thirtyDaysMs }
+
+                // 3. Total footsteps sum
+                val totalFootstepsSum = entities.sumOf { it.visitCount.toLong() }
+
+                // 4. Most active single day (based on firstVisitedAt)
+                val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val discoveriesByDay = entities.groupBy { sdf.format(Date(it.firstVisitedAt)) }
+                val mostActiveEntry = discoveriesByDay.maxByOrNull { it.value.size }
+                val activeDayDate = mostActiveEntry?.key ?: "N/A"
+                val activeDayCount = mostActiveEntry?.value?.size ?: 0
 
                 _uiState.update {
                     ProgressUiState(
                         nearbyRegionProgress = blockProgress,
                         districtRegionProgress = neighborhoodProgress,
-                        greaterRegionProgress = districtProgress
+                        greaterRegionProgress = districtProgress,
+                        totalCellsExplored = totalCells,
+                        totalAreaKm2 = totalArea,
+                        cellsToday = todayCount,
+                        cellsThisWeek = weekCount,
+                        cellsThisMonth = monthCount,
+                        totalFootsteps = totalFootstepsSum,
+                        mostActiveDayDate = activeDayDate,
+                        mostActiveDayCount = activeDayCount
                     )
                 }
             }
