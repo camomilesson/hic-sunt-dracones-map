@@ -43,10 +43,13 @@ import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.MapUiSettings
-import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.MarkerComposable
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.MapProperties
 
@@ -274,11 +277,33 @@ fun MapScreen(
             }
 
             uiState.lastKnownLocation?.let { location ->
-                Marker(
+                MarkerComposable(
                     state = MarkerState(position = location),
                     title = "Current Position",
-                    alpha = 0.8f
-                )
+                    anchor = Offset(0.5f, 0.5f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(22.dp)
+                            .background(Color(0xFF1A73E8).copy(alpha = 0.25f), CircleShape) // soft blue halo glow
+                            .padding(3.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(14.dp)
+                                .background(Color.White, CircleShape) // crisp white boundary ring
+                                .padding(2.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color(0xFF1A73E8), CircleShape) // solid blue core
+                            )
+                        }
+                    }
+                }
             }
 
             // Draw highlight overlay for the focused region
