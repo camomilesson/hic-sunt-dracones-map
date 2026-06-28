@@ -250,8 +250,9 @@ fun MapScreen(
                         }
 
                     val fogColor = when (uiState.fogColorName) {
-                        "Silvery" -> Color(0xFFC5D1D6)
-                        "Blue" -> Color(0xFF2E3A52)
+                        "Default" -> Color(0xFF2E3A52)   // Subdued blue
+                        "Parchment" -> Color(0xFFE0D2B8) // Warm parchment
+                        "Silver" -> Color(0xFFC5D1D6)    // Silvery mist
                         else -> Color(0xFFE0D2B8)
                     }
 
