@@ -10,8 +10,9 @@ import androidx.lifecycle.viewModelScope
 import com.andrei.dracones.data.persistence.AppDatabase
 import com.andrei.dracones.data.repository.ExplorationRepository
 import com.andrei.dracones.data.repository.MapThemeRepository
-import com.andrei.dracones.domain.h3.H3Manager
 import com.andrei.dracones.data.location.LocationTracker
+import com.andrei.dracones.domain.h3.H3Manager
+import com.andrei.dracones.service.ExplorationTrackingService
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -25,11 +26,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+
 class MapViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: ExplorationRepository
     private val locationTracker = LocationTracker(application)
-    private var trackingJob: Job? = null
-
+    private var uiLocationJob: Job? = null
     private val sharedPrefs: SharedPreferences = application.getSharedPreferences("dracones_settings", Context.MODE_PRIVATE)
 
     private val prefsListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
@@ -101,6 +102,12 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         val themeRepository = MapThemeRepository(database.mapThemeCacheDao())
 
         viewModelScope.launch {
+            ExplorationTrackingService.isTracking.collect { isServiceTracking ->
+                _uiState.update { it.copy(isTracking = isServiceTracking) }
+            }
+        }
+
+        viewModelScope.launch {
             _uiState.update { it.copy(isThemesLoading = true, themesErrorMessage = null) }
             val cached = themeRepository.getCachedThemes()
             if (cached != null) {
@@ -166,31 +173,51 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun startTracking() {
         if (_uiState.value.isTracking) return
 
-        com.andrei.dracones.domain.diagnostics.CrashReporter.log("Tracking started")
+        val context = getApplication<Application>()
+        val intent = android.content.Intent(context, ExplorationTrackingService::class.java)
+        context.startForegroundService(intent)
+
+        startUiLocationUpdates()
 
         _uiState.update { it.copy(
-            isTracking = true, 
-            isFollowingUser = true, 
+            isTracking = true,
+            isFollowingUser = true,
             isWaitingForLocation = true,
             shouldApplyDefaultZoom = true,
-            permissionMessage = null 
+            permissionMessage = null
         ) }
-        
-        trackingJob = locationTracker.getLocationUpdates(5000L)
+    }
+
+    fun stopTracking() {
+        val context = getApplication<Application>()
+        val intent = android.content.Intent("com.andrei.dracones.ACTION_STOP_TRACKING").apply {
+            `package` = context.packageName
+        }
+        context.sendBroadcast(intent)
+        stopUiLocationUpdates()
+
+        _uiState.update { it.copy(
+            isFollowingUser = false,
+            isWaitingForLocation = false
+        ) }
+    }
+
+    private fun startUiLocationUpdates() {
+        if (uiLocationJob != null) return
+
+        uiLocationJob = locationTracker.getLocationUpdates(5000L)
             .onEach { latLng ->
                 processNewLocation(latLng)
             }
             .launchIn(viewModelScope)
-        
-        Log.d(TAG, "Location tracking started")
+
+        Log.d(TAG, "UI location updates started")
     }
 
-    fun stopTracking() {
-        com.andrei.dracones.domain.diagnostics.CrashReporter.log("Tracking stopped")
-        trackingJob?.cancel()
-        trackingJob = null
-        _uiState.update { it.copy(isTracking = false, isFollowingUser = false, isWaitingForLocation = false) }
-        Log.d(TAG, "Location tracking stopped")
+    private fun stopUiLocationUpdates() {
+        uiLocationJob?.cancel()
+        uiLocationJob = null
+        Log.d(TAG, "UI location updates stopped")
     }
 
     fun onLocationPermissionResult(granted: Boolean) {
@@ -206,32 +233,10 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(shouldApplyDefaultZoom = false) }
     }
 
-    private suspend fun processNewLocation(latLng: LatLng) {
-        val h3Index = withContext(Dispatchers.Default) {
-            H3Manager.latLngToCell(latLng)
-        }
-
-        val alreadyInRecent = synchronized(recentH3Cells) {
-            recentH3Cells.contains(h3Index)
-        }
-
-        if (!alreadyInRecent) {
-            withContext(Dispatchers.IO) {
-                repository.markCellVisited(h3Index)
-            }
-            synchronized(recentH3Cells) {
-                if (recentH3Cells.size >= 3) {
-                    recentH3Cells.removeFirst()
-                }
-                recentH3Cells.addLast(h3Index)
-            }
-            Log.d(TAG, "New cell processed via tracking: $h3Index (Buffer: $recentH3Cells)")
-        }
-
-        _uiState.update { 
+    private fun processNewLocation(latLng: LatLng) {
+        _uiState.update {
             it.copy(
                 lastKnownLocation = latLng,
-                lastVisitedH3Index = h3Index,
                 isWaitingForLocation = false,
                 focusedRegion = null
             )
@@ -323,8 +328,8 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     override fun onCleared() {
-        super.onCleared()
+        stopUiLocationUpdates()
         sharedPrefs.unregisterOnSharedPreferenceChangeListener(prefsListener)
-        stopTracking()
+        super.onCleared()
     }
 }

@@ -2,9 +2,11 @@ package com.andrei.dracones.ui.map
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.ShareLocation
@@ -30,29 +33,27 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.andrei.dracones.domain.theme.MapStyleBuilder
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import com.google.android.gms.maps.model.MapStyleOptions
 import com.google.maps.android.compose.CameraMoveStartedReason
 import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
+import com.google.maps.android.compose.MarkerComposable
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.MarkerComposable
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.CircleShape
-import com.google.android.gms.maps.model.MapStyleOptions
-import com.google.maps.android.compose.MapProperties
-import com.andrei.dracones.domain.theme.MapStyleBuilder
 
 private const val MIN_ZOOM_FOR_FOG = 1f
 
@@ -66,18 +67,21 @@ fun MapScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Trigger focus if passed via navigation
     LaunchedEffect(parentH3Index, parentResolution) {
         if (parentH3Index != null && parentResolution != null) {
             viewModel.setFocusedRegion(parentH3Index, parentResolution)
         }
     }
 
-    val activeTheme = remember(uiState.availableThemes, uiState.mapTheme) {
-        uiState.availableThemes.find { it.name.equals(uiState.mapTheme, ignoreCase = true) }
-    }
+    val activeTheme = uiState.availableThemes.firstOrNull { it.name == uiState.mapTheme }
+        ?: uiState.availableThemes.firstOrNull()
 
-    val mapStyleJson = remember(uiState.showBusinesses, uiState.showTransit, uiState.showOtherPoi, activeTheme) {
+    val mapStyleJson = remember(
+        uiState.showBusinesses,
+        uiState.showTransit,
+        uiState.showOtherPoi,
+        activeTheme
+    ) {
         MapStyleBuilder.buildStyleJson(
             theme = activeTheme,
             showBusinesses = uiState.showBusinesses,
@@ -98,27 +102,29 @@ fun MapScreen(
         val granted = permissions.values.all { it }
         viewModel.onLocationPermissionResult(granted)
     }
-    
+
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
-            LatLng(uiState.initialCameraPosition.latitude, uiState.initialCameraPosition.longitude),
+            LatLng(
+                uiState.initialCameraPosition.latitude,
+                uiState.initialCameraPosition.longitude
+            ),
             uiState.initialCameraPosition.zoom
         )
     }
 
-    // Camera animation to fit the focused region bounds
     LaunchedEffect(uiState.focusedRegion) {
         val region = uiState.focusedRegion
         if (region != null) {
             val builder = LatLngBounds.builder()
             region.boundary.forEach { builder.include(it) }
             val bounds = builder.build()
+
             try {
                 cameraPositionState.animate(
                     CameraUpdateFactory.newLatLngBounds(bounds, 120)
                 )
             } catch (_: Exception) {
-                // Fallback if map layout isn't fully ready yet
                 cameraPositionState.animate(
                     CameraUpdateFactory.newLatLngZoom(bounds.center, 15f)
                 )
@@ -127,7 +133,10 @@ fun MapScreen(
     }
 
     LaunchedEffect(cameraPositionState.isMoving) {
-        if (cameraPositionState.isMoving && cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE) {
+        if (
+            cameraPositionState.isMoving &&
+            cameraPositionState.cameraMoveStartedReason == CameraMoveStartedReason.GESTURE
+        ) {
             viewModel.setFollowing(false)
             viewModel.clearFocusedRegion()
         }
@@ -137,20 +146,60 @@ fun MapScreen(
         val location = uiState.lastKnownLocation
         if (uiState.isFollowingUser && location != null) {
             val currentZoom = cameraPositionState.position.zoom
-            val targetZoom = if (uiState.shouldApplyDefaultZoom) MapViewModel.DEFAULT_EXPLORATION_ZOOM else currentZoom
-            
+            val targetZoom =
+                if (uiState.shouldApplyDefaultZoom) {
+                    MapViewModel.DEFAULT_EXPLORATION_ZOOM
+                } else {
+                    currentZoom
+                }
+
             cameraPositionState.animate(
                 CameraUpdateFactory.newLatLngZoom(location, targetZoom)
             )
-            
+
             if (uiState.shouldApplyDefaultZoom) {
                 viewModel.onInitialDiveCompleted()
             }
         }
     }
 
+    fun hasRequiredTrackingPermissions(): Boolean {
+        val fineLocationGranted =
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+        val coarseLocationGranted =
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+
+        val notificationsGranted =
+            Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED
+
+        return fineLocationGranted && coarseLocationGranted && notificationsGranted
+    }
+
+    fun requestTrackingPermissions() {
+        val permissionsToRequest = buildList {
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+            add(Manifest.permission.ACCESS_COARSE_LOCATION)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+
+        permissionLauncher.launch(permissionsToRequest.toTypedArray())
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
-        // Google Maps layer
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
@@ -159,6 +208,7 @@ fun MapScreen(
             onMapClick = { viewModel.clearFocusedRegion() }
         ) {
             val currentZoom = cameraPositionState.position.zoom
+
             if (currentZoom >= MIN_ZOOM_FOR_FOG) {
                 val projection = cameraPositionState.projection
                 val visibleRegion = projection?.visibleRegion
@@ -168,7 +218,6 @@ fun MapScreen(
                     val latSpan = bounds.northeast.latitude - bounds.southwest.latitude
                     val lngSpan = bounds.northeast.longitude - bounds.southwest.longitude
 
-                    // Pad the bounds slightly so the fog does not show hard edges during small camera movements
                     val latPadding = latSpan * 0.2
                     val lngPadding = lngSpan * 0.2
 
@@ -184,29 +233,26 @@ fun MapScreen(
                         LatLng(south, east)
                     )
 
-                    // Filter holes to merged outlines that are within or near the visible map bounds
                     val holes = uiState.visitedRegionOutlines
                         .filter { outline ->
                             outline.any { point ->
                                 point.latitude in south..north &&
-                                point.longitude in west..east
+                                        point.longitude in west..east
                             }
                         }
 
-                    // Filter pockets to unvisited islands within or near the visible map bounds
                     val pockets = uiState.unexploredPockets
                         .filter { pocket ->
                             pocket.any { point ->
                                 point.latitude in south..north &&
-                                point.longitude in west..east
+                                        point.longitude in west..east
                             }
                         }
 
-                    // Load chosen fog color dynamically from state
                     val fogColor = when (uiState.fogColorName) {
-                        "Silver" -> Color(0xFFC5D1D6)    // Silvery/foggy mist
-                        "Parchment" -> Color(0xFFE0D2B8) // Warm parchment beige
-                        else -> Color(0xFF2E3A52)        // Default subdued blue fog
+                        "Silvery" -> Color(0xFFC5D1D6)
+                        "Blue" -> Color(0xFF2E3A52)
+                        else -> Color(0xFFE0D2B8)
                     }
 
                     Polygon(
@@ -218,7 +264,6 @@ fun MapScreen(
                         zIndex = 1f
                     )
 
-                    // Cover unexplored pocket islands back up with solid fog
                     pockets.forEach { pocket ->
                         Polygon(
                             points = pocket,
@@ -240,28 +285,30 @@ fun MapScreen(
                     Box(
                         modifier = Modifier
                             .size(22.dp)
-                            .background(Color(0xFF1A73E8).copy(alpha = 0.25f), CircleShape) // soft blue halo glow
+                            .background(
+                                Color(0xFF1A73E8).copy(alpha = 0.25f),
+                                CircleShape
+                            )
                             .padding(3.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Box(
                             modifier = Modifier
                                 .size(14.dp)
-                                .background(Color.White, CircleShape) // crisp white boundary ring
+                                .background(Color.White, CircleShape)
                                 .padding(2.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(Color(0xFF1A73E8), CircleShape) // solid blue core
+                                    .background(Color(0xFF1A73E8), CircleShape)
                             )
                         }
                     }
                 }
             }
 
-            // Draw highlight overlay for the focused region
             uiState.focusedRegion?.let { region ->
                 Polygon(
                     points = region.boundary,
@@ -273,7 +320,6 @@ fun MapScreen(
             }
         }
 
-        // Title and Slogan Overlay (Top)
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -290,11 +336,15 @@ fun MapScreen(
                 ),
                 color = Color.White
             )
-            val greeting = if (uiState.travelerName.isBlank()) {
-                "Hello, traveler! Ready to explore?"
-            } else {
-                "Hello, ${uiState.travelerName}! Ready to explore?"
-            }
+
+            val greetingName = uiState.travelerName.trim()
+            val greeting =
+                if (greetingName.isBlank()) {
+                    "Hello, traveler! Ready to explore?"
+                } else {
+                    "Hello, $greetingName! Ready to explore?"
+                }
+
             Text(
                 text = greeting,
                 style = MaterialTheme.typography.bodyLarge.copy(
@@ -305,17 +355,8 @@ fun MapScreen(
                 ),
                 color = Color.White
             )
-            
-            uiState.permissionMessage?.let { message ->
-                Text(
-                    text = message,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp)
-                )
-            }
 
-            uiState.themesErrorMessage?.let { message ->
+            uiState.permissionMessage?.let { message ->
                 Text(
                     text = message,
                     color = MaterialTheme.colorScheme.error,
@@ -343,6 +384,15 @@ fun MapScreen(
                 }
             }
 
+            uiState.themesErrorMessage?.let { message ->
+                Text(
+                    text = message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
+
             if (uiState.isWaitingForLocation) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -363,7 +413,6 @@ fun MapScreen(
             }
         }
 
-        // Floating Controls (Bottom End)
         Column(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
@@ -373,45 +422,60 @@ fun MapScreen(
             AnimatedVisibility(visible = uiState.isTracking) {
                 Column(horizontalAlignment = Alignment.End) {
                     FloatingActionButton(
-                        onClick = { viewModel.setFollowing(!uiState.isFollowingUser) },
-                        containerColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                        contentColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                        onClick = {
+                            viewModel.setFollowing(!uiState.isFollowingUser)
+                        },
+                        containerColor =
+                            if (uiState.isFollowingUser) {
+                                MaterialTheme.colorScheme.primaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surface
+                            },
+                        contentColor =
+                            if (uiState.isFollowingUser) {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
                     ) {
                         Icon(Icons.Default.MyLocation, contentDescription = "Follow")
                     }
-                    
+
                     Spacer(modifier = Modifier.height(12.dp))
                 }
             }
-            
+
             ExtendedFloatingActionButton(
                 text = { Text("Track") },
-                icon = { Icon(Icons.Default.ShareLocation, contentDescription = null) },
+                icon = {
+                    Icon(
+                        Icons.Default.ShareLocation,
+                        contentDescription = null
+                    )
+                },
                 onClick = {
                     if (uiState.isTracking) {
                         viewModel.stopTracking()
                     } else {
-                        val fineLocation = ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.ACCESS_FINE_LOCATION
-                        ) == PackageManager.PERMISSION_GRANTED
-                        val coarseLocation = ContextCompat.checkSelfPermission(
-                            context, Manifest.permission.ACCESS_COARSE_LOCATION
-                        ) == PackageManager.PERMISSION_GRANTED
-
-                        if (fineLocation && coarseLocation) {
+                        if (hasRequiredTrackingPermissions()) {
                             viewModel.startTracking()
                         } else {
-                            permissionLauncher.launch(
-                                arrayOf(
-                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                )
-                            )
+                            requestTrackingPermissions()
                         }
                     }
                 },
-                containerColor = if (uiState.isTracking) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
-                contentColor = if (uiState.isTracking) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+                containerColor =
+                    if (uiState.isTracking) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surface
+                    },
+                contentColor =
+                    if (uiState.isTracking) {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
             )
         }
     }
