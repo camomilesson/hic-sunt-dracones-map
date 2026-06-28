@@ -23,7 +23,8 @@ data class MapUiState(
     val showBusinesses: Boolean = true,
     val showTransit: Boolean = true,
     val showOtherPoi: Boolean = true,
-    val mapTheme: String = "Default"
+    val mapTheme: String = "Default",
+    val fogColorName: String = "Parchment"
 )
 
 data class CameraPositionState(

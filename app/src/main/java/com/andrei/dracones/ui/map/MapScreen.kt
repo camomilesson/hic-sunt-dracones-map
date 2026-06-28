@@ -206,11 +206,11 @@ fun MapScreen(
                             }
                         }
 
-                    // Dynamic fog base color tied directly to map theme to ensure maximum contrast & harmony
-                    val fogColor = if (uiState.mapTheme == "Parchment") {
-                        Color(0xFFC5D1D6) // Silvery/foggy mist that contrasts with warm beige land
-                    } else {
-                        Color(0xFFE0D2B8) // Warm parchment beige that contrasts with default blue/green map
+                    // Load chosen fog color dynamically from state
+                    val fogColor = when (uiState.fogColorName) {
+                        "Silvery" -> Color(0xFFC5D1D6) // Silvery/foggy mist
+                        "Blue" -> Color(0xFF3F51B5)    // Deep royal blue
+                        else -> Color(0xFFE0D2B8)      // Warm parchment beige
                     }
 
                     Polygon(

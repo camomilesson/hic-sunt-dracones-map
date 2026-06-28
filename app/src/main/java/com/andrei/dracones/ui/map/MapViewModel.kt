@@ -53,6 +53,10 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
                 val theme = sharedPrefs.getString("map_theme", "Default") ?: "Default"
                 _uiState.update { it.copy(mapTheme = theme) }
             }
+            "fog_color_name" -> {
+                val colorName = sharedPrefs.getString("fog_color_name", "Parchment") ?: "Parchment"
+                _uiState.update { it.copy(fogColorName = colorName) }
+            }
         }
     }
 
@@ -74,13 +78,15 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
         val showTransit = sharedPrefs.getBoolean("show_transit", true)
         val showOtherPoi = sharedPrefs.getBoolean("show_other_poi", true)
         val mapTheme = sharedPrefs.getString("map_theme", "Default") ?: "Default"
+        val fogColorName = sharedPrefs.getString("fog_color_name", "Parchment") ?: "Parchment"
 
         _uiState.update { it.copy(
             fogOpacity = initialOpacity,
             showBusinesses = showBusinesses,
             showTransit = showTransit,
             showOtherPoi = showOtherPoi,
-            mapTheme = mapTheme
+            mapTheme = mapTheme,
+            fogColorName = fogColorName,
         ) }
 
         val database = AppDatabase.getDatabase(application)
@@ -234,6 +240,11 @@ class MapViewModel(application: Application) : AndroidViewModel(application) {
     fun setMapTheme(theme: String) {
         sharedPrefs.edit { putString("map_theme", theme) }
         _uiState.update { it.copy(mapTheme = theme) }
+    }
+
+    fun setFogColorName(colorName: String) {
+        sharedPrefs.edit { putString("fog_color_name", colorName) }
+        _uiState.update { it.copy(fogColorName = colorName) }
     }
 
     override fun onCleared() {

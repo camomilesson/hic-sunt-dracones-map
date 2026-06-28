@@ -108,6 +108,45 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Fog Color Section
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                Text(
+                    text = "Fog Color",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf("Parchment", "Silvery", "Blue").forEach { colorName ->
+                        val isSelected = uiState.fogColorName == colorName
+                        if (isSelected) {
+                            Button(
+                                onClick = { viewModel.setFogColorName(colorName) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(colorName)
+                            }
+                        } else {
+                            OutlinedButton(
+                                onClick = { viewModel.setFogColorName(colorName) },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(colorName)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Map Style Section
             Column(
                 modifier = Modifier
