@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material.icons.filled.ShareLocation
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -310,13 +311,13 @@ fun MapScreen(
                 .padding(bottom = 16.dp, end = 16.dp),
             horizontalAlignment = Alignment.End
         ) {
-            ExtendedFloatingActionButton(
-                text = { Text("Follow") },
-                icon = { Icon(Icons.Default.MyLocation, contentDescription = null) },
+            FloatingActionButton(
                 onClick = { viewModel.setFollowing(!uiState.isFollowingUser) },
                 containerColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                 contentColor = if (uiState.isFollowingUser) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-            )
+            ) {
+                Icon(Icons.Default.MyLocation, contentDescription = "Follow")
+            }
             
             Spacer(modifier = Modifier.height(12.dp))
             
