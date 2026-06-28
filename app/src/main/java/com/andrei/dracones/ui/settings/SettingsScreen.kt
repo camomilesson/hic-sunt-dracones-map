@@ -283,20 +283,6 @@ fun SettingsScreen(
             ) {
                 Text("Clear Exploration Data")
             }
-
-            if (com.andrei.dracones.BuildConfig.DEBUG) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Button(
-                    onClick = { com.andrei.dracones.domain.diagnostics.CrashReporter.forceCrash() },
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    ),
-                ) {
-                    Text("Trigger Test Crash (Debug Only)")
-                }
-            }
         }
     }
 }

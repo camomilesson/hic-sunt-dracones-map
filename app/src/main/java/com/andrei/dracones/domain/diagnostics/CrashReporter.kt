@@ -23,9 +23,4 @@ object CrashReporter {
             Log.e(TAG, "Failed to record exception to Crashlytics", e)
         }
     }
-
-    fun forceCrash() {
-        log("Forcing a manual development crash via CrashReporter")
-        throw RuntimeException("Test crash for Firebase Crashlytics verification")
-    }
 }
